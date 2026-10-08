@@ -1050,8 +1050,7 @@ function tabFeedback(){
   $('#tab').innerHTML = texts.map(it => {
     const ans = rows.filter(r => String(r.f[it.col] || '').trim());
     return `<div class="panel"><h3>${esc(it.q)}</h3><p class="sub">${ans.length} ${plural(ans.length,'ответ','ответа','ответов')}</p>
-      ${ans.length ? ans.map(r => `<div class="fb"><p>${esc(r.f[it.col])}</p>
-        <span>Группа ${esc(r.group)}${r.f['Тренер'] ? ' · ' + esc(r.f['Тренер']) : ''} · ${fmtDate(r.finishedAt)}</span></div>`).join('')
+      ${ans.length ? ans.map(r => `<div class="fb"><p>${esc(r.f[it.col])}</p></div>`).join('')
         : '<div class="empty">Ответов нет.</div>'}</div>`; }).join('');
 }
 function tabList(){
