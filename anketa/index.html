@@ -196,7 +196,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:16px}
 .wrap.wide{max-width:1680px}
 :root{--good:#1B8A4C;--mid:#E2C044;--low:#D7263D;--col:#EF8A4C}
 .dtool{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 12px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
-.kp5{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.kp5{display:grid;grid-template-columns:repeat(var(--kc,6),minmax(0,1fr));gap:12px;margin-bottom:12px}
 .kbig{background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px 14px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .kbig .t{font-size:15px;font-weight:700;color:#2D2D2D;line-height:1.25}
 .kbig .v{font-size:38px;font-weight:900;letter-spacing:-.03em;line-height:1.1;margin:2px 0 0;color:var(--ink)}
@@ -289,6 +289,54 @@ table.tbl{width:100%;border-collapse:collapse;font-size:16px}
 .mv .btn.sm{min-height:34px;padding:4px 11px}
 #edErr{min-height:0}
 @media (max-width:720px){.ed .ed2{grid-template-columns:1fr}}
+.wrap.wide header.top{display:none}
+.tbar{display:flex;align-items:center;gap:18px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px 8px 6px 16px;margin-bottom:10px}
+.tbar .ttl{font-weight:800;font-size:15px;white-space:nowrap}
+.tbar .ttl span{color:var(--kick)}
+.ttabs{display:flex;gap:2px;overflow-x:auto}
+.ttabs button{font:inherit;font-size:14px;font-weight:600;color:var(--muted);background:none;border:0;padding:7px 10px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.ttabs button:hover{color:var(--ink);background:var(--soft)}
+.ttabs button.on{color:var(--ink);font-weight:800;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:6px}
+.tacts{margin-left:auto;display:flex;align-items:center;gap:4px}
+.tlink{font-size:14px;color:#2D2D2D;text-decoration:none;display:inline-flex;gap:6px;align-items:center;padding:6px 8px;border-radius:8px;white-space:nowrap}
+.tlink:hover{background:var(--soft)}
+.obtn{font:inherit;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);background:#fff;
+  border-radius:10px;padding:5px 12px;min-height:34px;cursor:pointer;color:var(--ink);white-space:nowrap}
+.obtn:hover{border-color:#9EA39A}
+.obtn[disabled]{opacity:.5;cursor:default}
+.ibtn{width:34px;height:34px;border-radius:10px;border:0;background:none;display:grid;place-items:center;cursor:pointer;color:#2D2D2D;padding:0}
+.ibtn:hover{background:var(--soft)}
+.ibtn.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.menu{position:relative}
+.menu .dd{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--line);border-radius:12px;
+  box-shadow:0 10px 30px rgba(10,6,5,.12);padding:6px;min-width:190px;z-index:45;display:none}
+.menu.open .dd{display:block}
+.dd .cap{font-size:12px;color:var(--kick);padding:6px 10px 4px}
+.dd .mi{display:block;width:100%;text-align:left;font:inherit;font-size:14px;padding:8px 10px;border:0;background:none;border-radius:8px;cursor:pointer;color:var(--ink)}
+.dd .mi:hover{background:var(--soft)}
+.fbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.pillsel{-webkit-appearance:none;appearance:none;font:inherit;font-size:14px;font-weight:600;color:var(--ink);border:1.5px solid var(--line);border-radius:10px;
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23555' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 10px center;
+  padding:5px 28px 5px 12px;min-height:34px;cursor:pointer;max-width:220px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.pillsel:hover{border-color:#9EA39A}
+.pillsel.set{border-color:var(--ink)}
+.fsearch2{flex:1;min-width:180px;max-width:460px;display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:10px;background:#fff;padding:0 10px;min-height:34px;color:var(--muted)}
+.fsearch2:focus-within{border-color:var(--blue)}
+.fsearch2 input{border:0;outline:0;font:inherit;font-size:14px;flex:1;background:none;min-width:0;color:var(--ink)}
+.freset{margin-left:auto;font:inherit;font-size:14px;font-weight:600;color:var(--blue);background:none;border:0;cursor:pointer;padding:6px 4px}
+.freset[disabled]{color:var(--kick);opacity:.6;cursor:default}
+.period .dd{left:0;right:auto;min-width:270px;padding:12px}
+.period .r{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;font-size:13px;color:var(--muted)}
+.period .r input{font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:8px;padding:5px 8px}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.presets button{font:inherit;font-size:13px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 9px;cursor:pointer}
+.presets button:hover{background:var(--soft)}
+@media (max-width:900px){
+  .tbar{flex-wrap:wrap;gap:6px 10px;padding:8px 10px}
+  .ttabs{order:3;width:100%}
+  .tlink .lg{display:none}
+}
 #tip{position:fixed;z-index:90;background:var(--ink);color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.45;
   pointer-events:none;opacity:0;transition:opacity .1s;max-width:280px;left:0;top:0}
 #tip.on{opacity:1}
@@ -794,8 +842,8 @@ function filtered(){
   return T.rows.filter(r =>
     (!f.group || r.group === f.group) && (!f.trainer || (r.f['Тренер'] || '') === f.trainer) &&
     (!f.from || dayKey(r.finishedAt) >= f.from) && (!f.to || dayKey(r.finishedAt) <= f.to) &&
-    (!q || `${r.surname} ${r.name}`.toLowerCase().includes(q) ||
-      ITEMS.some(it => it.type === 'text' && String(r.f[it.col] || '').toLowerCase().includes(q))));
+    (!q || (T.tab === 'list' ? `${r.surname} ${r.name}`.toLowerCase().includes(q)
+      : ITEMS.some(it => it.type === 'text' && String(r.f[it.col] || '').toLowerCase().includes(q)))));
 }
 const trainersList = () => [...new Set([...SURVEY.trainers, ...T.rows.map(r => r.f['Тренер']).filter(Boolean)])];
 const groupsList = () => [...new Set(T.rows.map(r => r.group))].sort((a, b) => a.localeCompare(b, 'ru', {numeric: true}));
@@ -808,21 +856,26 @@ function stat(rows, h){
 function showTrainer(){
   setKicker('Панель тренера'); $('#demo').hidden = true; $('.wrap').classList.add('wide');
   $('#app').innerHTML = `
-    <div class="thead"><h1>Анкеты участников</h1>
-      <div class="acts"><a class="btn ghost sm" href="${CONFIG.TEST_URL}?trainer">Итоговый тест →</a>
-        <button class="btn sm" id="xlsx">⬇ Скачать Excel</button>
-        <button class="btn ghost sm" id="reload">↻ Обновить</button><button class="btn ghost sm" id="logout">Выйти</button></div></div>
+    <div class="tbar">
+      <div class="ttl">ИБА <span>·</span> Анкеты участников</div>
+      <nav class="ttabs" role="tablist">${[['summary', 'Дашборд'], ['feedback', 'Отзывы'], ['list', 'Анкеты'], ['editor', 'Вопросы'], ['share', 'QR']]
+        .map(([t, n]) => `<button type="button" role="tab" data-t="${t}">${n}</button>`).join('')}</nav>
+      <div class="tacts">
+        <a class="tlink" href="${CONFIG.TEST_URL}?trainer"><span class="lg">Итоговый тест</span> <span aria-hidden="true">→</span></a>
+        <button type="button" class="obtn" id="xlsx">${ICON.dl} Excel</button>
+        <button type="button" class="ibtn" id="reload" title="Обновить данные" aria-label="Обновить данные">${ICON.rf}</button>
+        <div class="menu" id="pmenu"><button type="button" class="ibtn" id="pbtn" title="Профиль" aria-label="Профиль" aria-haspopup="true">${ICON.user}</button>
+          <div class="dd" role="menu"><div class="cap">Панель тренера</div><button type="button" class="mi" id="logout" role="menuitem">Выйти</button></div></div>
+      </div>
+    </div>
     ${DEMO ? `<div class="demo">Демо-режим: показаны ответы из этого браузера.
       <button class="btn sm" id="seed">Добавить примеры</button><button class="btn ghost sm" id="wipe">Очистить</button></div>` : ''}
-    <nav class="tabs">
-      <button data-t="summary">Дашборд</button><button data-t="feedback">Отзывы</button>
-      <button data-t="list">Анкеты</button><button data-t="editor">Вопросы</button><button data-t="share">Ссылка<span class="lg"> и QR</span></button>
-    </nav>
     <div id="filters"></div><div id="tab"></div>`;
-  $$('.tabs button').forEach(b => b.onclick = () => { T.tab = b.dataset.t; renderTab(); });
+  $$('.ttabs button').forEach(b => b.onclick = () => { T.tab = b.dataset.t; renderTab(); });
+  $('#pbtn').onclick = () => $('#pmenu').classList.toggle('open');
   $('#xlsx').onclick = () => { const rows = filtered(); if (!rows.length) return toast('Нет анкет для выгрузки'); exportXlsx(rows); };
-  $('#reload').onclick = async () => { $('#reload').disabled = true; const r = await loadResults();
-    $('#reload').disabled = false; if (r === true){ renderFilters(); renderTab(); toast('Данные обновлены'); } else toast(r); };
+  $('#reload').onclick = async () => { const b = $('#reload'); b.disabled = true; b.classList.add('spin'); const r = await loadResults();
+    b.disabled = false; b.classList.remove('spin'); if (r === true){ renderFilters(); renderTab(); toast('Данные обновлены'); } else toast(r); };
   $('#logout').onclick = () => { ss.del(K.trainer); T.pwd = null; T.rows = []; history.replaceState(null, '', location.pathname); boot(); };
   if (DEMO){
     $('#seed').onclick = () => { seedDemo(); loadResults().then(() => { renderFilters(); renderTab(); }); };
@@ -834,20 +887,51 @@ function renderFilters(){
   const f = T.f, gs = groupsList();
   if (f.group && !gs.includes(f.group)) f.group = '';
   $('#filters').innerHTML = `
-    <div class="filters">
-      <label><span>Группа</span><select class="ctl" data-f="group"><option value="">Все группы</option>
-        ${gs.map(g => `<option ${g === f.group ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select></label>
-      <label><span>Тренер</span><select class="ctl" data-f="trainer"><option value="">Все тренеры</option>
-        ${trainersList().map(t => `<option ${t === f.trainer ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
-      <label><span>С даты</span><input type="date" class="ctl" data-f="from" value="${f.from}"></label>
-      <label><span>По дату</span><input type="date" class="ctl" data-f="to" value="${f.to}"></label>
-      <label class="fsearch"><span>Поиск по имени или тексту отзывов</span><input type="search" class="ctl" data-f="q" value="${esc(f.q)}" placeholder="Например, Power Query"></label>
+    <div class="fbar">
+      <select class="pillsel" data-f="group" aria-label="Группа"><option value="">Группа</option>
+        ${gs.map(g => `<option ${g === f.group ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select>
+      <select class="pillsel" data-f="trainer" aria-label="Тренер"><option value="">Тренер</option>
+        ${trainersList().map(t => `<option ${t === f.trainer ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
+      <div class="menu period" id="per"><button type="button" class="pillsel" id="perBtn">${ICON.cal}<span></span></button>
+        <div class="dd"><div class="r"><span>С</span><input type="date" data-f="from" value="${f.from}"><span>По</span><input type="date" data-f="to" value="${f.to}"></div>
+          <div class="presets"><button type="button" data-days="1">Сегодня</button><button type="button" data-days="7">7 дней</button>
+            <button type="button" data-days="30">30 дней</button><button type="button" data-days="0">Всё время</button></div></div></div>
+      <label class="fsearch2">${ICON.search}<input type="search" data-f="q" value="${esc(f.q)}" aria-label="Поиск"></label>
+      <button type="button" class="freset" id="freset">Сбросить</button>
     </div>`;
   $$('#filters [data-f]').forEach(el => el.addEventListener(el.type === 'search' ? 'input' : 'change', () => {
-    T.f[el.dataset.f] = el.value; renderTab(); }));
+    T.f[el.dataset.f] = el.value; filterUi(); renderTab(); }));
+  $('#perBtn').onclick = () => $('#per').classList.toggle('open');
+  $$('#per [data-days]').forEach(b => b.onclick = () => {
+    const d = +b.dataset.days;
+    T.f.from = d ? dayKey(Date.now() - (d - 1) * 864e5) : ''; T.f.to = d ? dayKey(Date.now()) : '';
+    renderFilters(); renderTab(); });
+  $('#freset').onclick = () => { T.f = {group: '', trainer: '', from: '', to: '', q: ''}; renderFilters(); renderTab(); };
+  filterUi();
 }
+// подписи и состояние фильтров без перерисовки (чтобы не сбивать ввод)
+function filterUi(){
+  const f = T.f, dm = k => k.slice(8, 10) + '.' + k.slice(5, 7);
+  const b = $('#perBtn'); if (!b) return;
+  $('span', b).textContent = f.from || f.to ? `${f.from ? dm(f.from) : '…'} – ${f.to ? dm(f.to) : '…'}` : 'Период';
+  b.classList.toggle('set', !!(f.from || f.to));
+  $('#filters [data-f=group]').classList.toggle('set', !!f.group);
+  $('#filters [data-f=trainer]').classList.toggle('set', !!f.trainer);
+  $('#filters [data-f=q]').placeholder = T.tab === 'list' ? 'Поиск по фамилии' : 'Поиск по отзывам';
+  $('#freset').disabled = !(f.group || f.trainer || f.from || f.to || f.q);
+}
+// всплывающие меню закрываются кликом мимо
+document.addEventListener('click', e => { $$('.menu.open').forEach(m => { if (!m.contains(e.target)) m.classList.remove('open'); }); });
+const ICON = (() => {
+  const i = (d, w = 16) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  return {dl: i('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'), rf: i('<path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/>', 18),
+    user: i('<circle cx="12" cy="8" r="4"/><path d="M4 21c1.6-4 4.6-6 8-6s6.4 2 8 6"/>', 18),
+    cal: i('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', 15),
+    search: i('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>', 15)};
+})();
 function renderTab(){
-  $$('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === T.tab));
+  $$('.ttabs button').forEach(b => { b.classList.toggle('on', b.dataset.t === T.tab); b.setAttribute('aria-selected', b.dataset.t === T.tab); });
+  filterUi();
   $('#filters').hidden = T.tab === 'share' || T.tab === 'editor';
   $('#tab').onclick = $('#tab').oninput = $('#tab').onchange = null;
   ({summary: tabSummary, feedback: tabFeedback, list: tabList, editor: tabEditor, share: tabShare})[T.tab]();
@@ -913,7 +997,7 @@ function tabSummary(){
     return rbar(t, st, `<b>${t}</b><br>Средняя по всем пунктам: ${fmtAvg(st.avg)} · ${st.n} ${plural(st.n,'оценка','оценки','оценок')}`);
   }).join('');
   $('#tab').innerHTML = `
-    <div class="kp5" style="grid-template-columns:repeat(${q.length + 3},minmax(0,1fr))">
+    <div class="kp5" style="--kc:${q.length + 3}">
       <div class="kbig" data-tip="${esc(`<b>Кол-во слушателей</b><br>${n} ${plural(n,'анкета','анкеты','анкет')} по выбранным фильтрам`)}"><div class="t">Кол-во слушателей</div><div class="v">${people}</div></div>
       <div class="kbig" data-tip="${esc(`<b>Средняя оценка</b><br>Лекции, практика и обратная связь вместе · ${qp.n} ${plural(qp.n,'оценка','оценки','оценок')}`)}">
         <div class="t">Средняя оценка</div><div class="v">${fmtAvg(qp.avg)}</div></div>
@@ -1130,7 +1214,7 @@ const xlDate = iso => { const d = new Date(iso);
 async function exportXlsx(rows){
   const btn = $('#xlsx'); btn.disabled = true; btn.textContent = 'Готовим файл…';
   try { await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', () => window.XLSX); }
-  catch(e){ btn.disabled = false; btn.textContent = '⬇ Скачать Excel'; return toast('Не удалось загрузить модуль Excel — проверьте интернет'); }
+  catch(e){ btn.disabled = false; btn.innerHTML = ICON.dl + ' Excel'; return toast('Не удалось загрузить модуль Excel — проверьте интернет'); }
   const sheet = (aoa, widths) => { const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = widths.map(w => ({wch: w}));
     ws['!autofilter'] = {ref: XLSX.utils.encode_range({s: {r: 0, c: 0}, e: {r: aoa.length - 1, c: aoa[0].length - 1}})}; return ws; };
   const sorted = rows.slice().sort((a, b) => a.finishedAt.localeCompare(b.finishedAt));
@@ -1158,7 +1242,7 @@ async function exportXlsx(rows){
   XLSX.utils.book_append_sheet(wb, sheet(scores, [10, 36, 9, 8, 5, 5, 5, 5, 5, ...groups.map(() => 11), ...trs.map(() => 17)]), 'Оценки');
   XLSX.utils.book_append_sheet(wb, sheet(fr, [30, 10, 10]), 'Применение');
   XLSX.writeFile(wb, `Анкета_${T.f.group ? 'группа_' + T.f.group + '_' : ''}${T.f.trainer ? T.f.trainer.replace(/\s+/g, '_') + '_' : ''}${dayKey(new Date())}.xlsx`);
-  btn.disabled = false; btn.textContent = '⬇ Скачать Excel';
+  btn.disabled = false; btn.innerHTML = ICON.dl + ' Excel';
 }
 
 /* --- Ссылка и QR --- */
