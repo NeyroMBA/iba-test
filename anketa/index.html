@@ -598,6 +598,7 @@ function showLogin(prefGroup = ''){
       f[k].classList.toggle('bad', short); if (short && !bad) bad = k;
     }
     if (bad){ $('#err').textContent = 'Заполните все поля: фамилию, имя, номер группы и выберите тренера.'; f[bad].focus(); return; }
+    f.dataset.busy = '1';
     if (CONFIG.ONE_RESPONSE){
       const btn = f.querySelector('button'); btn.disabled = true; btn.textContent = 'Проверяем…';
       const r = await Promise.race([api({action: 'survey_check', surname: v.surname, name: v.name, group: v.group}).catch(() => null), new Promise(res => setTimeout(res, 8000))]);
@@ -642,6 +643,7 @@ function itemHtml(it){
 }
 function showSection(){
   setKicker('Анкета участника');
+  S.step = Math.max(0, Math.min(S.step || 0, SURVEY.sections.length - 1));
   const n = SURVEY.sections.length, i = S.step, sec = SURVEY.sections[i], last = i === n - 1;
   $('#app').innerHTML = `
     <div class="qtop"><span class="who">${esc(S.user.surname)} ${esc(S.user.name)} · группа ${esc(S.user.group)}${S.user.trainer ? ' · тренер ' + esc(S.user.trainer) : ''}</span>
@@ -1219,18 +1221,28 @@ async function boot(){
     $('#demo').hidden = false;
     $('#demo').innerHTML = '<b>Демо-режим.</b> Google Таблица не подключена — ответы сохраняются только в этом браузере.';
   }
-  $('#app').innerHTML = '<div class="empty">Загружаем анкету…</div>';
-  await loadSurvey();
+  // сразу показываем последнюю известную версию вопросов, свежую подгружаем параллельно
+  const cached = ls.get(K.cfg, null);
+  if (cached && validSurvey(cached)) applySurvey(cached);
+  const fresh = loadSurvey();
   if (p.has('trainer') || ss.get(K.trainer, null)){
     T.pwd = ss.get(K.trainer, null);
     if (T.pwd){
       $('#app').innerHTML = '<div class="empty">Загружаем ответы…</div>';
-      const r = await loadResults();
+      const [r] = await Promise.all([loadResults(), fresh]);
       if (r === true) return showTrainer();
       ss.del(K.trainer); return showTrainerLogin(r);
     }
-    return showTrainerLogin();
+    await fresh; return showTrainerLogin();
   }
+  // если вопросы обновились, пока участник на экране входа, — перерисуем форму, сохранив введённое
+  fresh.then(() => {
+    const f = $('#f'); if (!f || f.dataset.busy) return;
+    const v = {surname: f.surname.value, name: f.name.value, group: f.group.value, trainer: f.trainer.value};
+    showLogin(v.group);
+    const g = $('#f'); g.surname.value = v.surname; g.name.value = v.name; g.group.value = v.group;
+    if (SURVEY.trainers.includes(v.trainer)) g.trainer.value = v.trainer;
+  });
   if (ls.get(K.outbox, []).length) flushOutbox();
   if (S && S.done) return showThanks();
   if (S && S.user){ S.step = Math.min(S.step || 0, SURVEY.sections.length - 1); return showSection(); }
