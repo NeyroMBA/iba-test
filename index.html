@@ -766,7 +766,7 @@ function tabResults(){
       <thead><tr><th class="nos">Группа</th><th class="nos r">Чел.</th><th class="nos">Средний результат</th><th class="nos r">Сдали</th><th class="nos">Последнее прохождение</th></tr></thead>
       <tbody>${gRows}</tbody></table></div></div>` : ''}
     <div class="panel">
-      <h3><span>Участники</span><button class="btn sm" id="csv" ${n ? '' : 'disabled'}>⬇ Скачать CSV для Excel</button></h3>
+      <h3><span>Участники</span><button class="btn sm" id="xlsx" ${n ? '' : 'disabled'}>⬇ Скачать Excel</button></h3>
       ${n ? `
       <table class="tbl desk"><thead><tr>${th('date','Дата')}${th('name','Участник')}${th('group','Группа')}${th('pct','Результат')}
         <th class="nos">Статус</th>${th('att','Попытка','r')}${th('time','Время','r')}</tr></thead>
@@ -782,7 +782,7 @@ function tabResults(){
     const k = h.dataset.s; T.sort = {k, dir: T.sort.k === k ? -T.sort.dir : (k === 'name' || k === 'group' ? 1 : -1)}; tabResults(); });
   $$('#tab [data-id]').forEach(el => el.onclick = () => openDetail(el.dataset.id));
   $$('#tab tr[data-g]').forEach(el => el.onclick = () => { T.f.group = el.dataset.g; renderFilters(); renderTab(); });
-  if ($('#csv')) $('#csv').onclick = () => exportCsv(rows);
+  if ($('#xlsx')) $('#xlsx').onclick = () => exportXlsx(rows);
 }
 function openDetail(id){
   const r = T.rows.find(x => x.id === id); if (!r) return;
@@ -803,6 +803,54 @@ function openDetail(id){
       <em class="${g.ok[k] ? 'right' : 'mine'}">Ответ: ${answerText(q, r.answers[k])}</em>
       ${g.ok[k] ? '' : `<em class="right">Правильно: ${answerText(q, q.a)}</em>`}</span></div>`).join('')}</div>`);
   $$('#mbody a[data-id]').forEach(a => a.onclick = e => { e.preventDefault(); openDetail(a.dataset.id); });
+}
+const loadScript = (src, test) => test() ? Promise.resolve() : new Promise((res, rej) => {
+  const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => { s.remove(); rej(); };
+  document.head.appendChild(s); });
+const xlDate = iso => { const d = new Date(iso);
+  return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()) / 864e5 + 25569; };
+async function exportXlsx(rows){
+  const btn = $('#xlsx'); btn.disabled = true; btn.textContent = 'Готовим файл…';
+  try {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', () => window.XLSX);
+  } catch(e){
+    btn.disabled = false; btn.textContent = '⬇ Скачать Excel';
+    toast('Не удалось загрузить модуль Excel — скачан CSV'); return exportCsv(rows);
+  }
+  const typ = {one: 'один ответ', many: 'несколько ответов', order: 'последовательность'};
+  const sheet = (aoa, widths) => { const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = widths.map(w => ({wch: w}));
+    ws['!autofilter'] = {ref: XLSX.utils.encode_range({s: {r: 0, c: 0}, e: {r: aoa.length - 1, c: aoa[0].length - 1}})};
+    return ws; };
+
+  // Участники
+  const people = [['Дата', 'Фамилия', 'Имя', 'Группа', 'Баллы', 'Из', '%', 'Статус', 'Попытка', 'Длительность, мин',
+    ...Q.map((_, k) => 'В' + (k + 1))]];
+  for (const r of rows){ const g = grade(r.answers);
+    people.push([{t: 'n', v: xlDate(r.finishedAt), z: 'dd.mm.yyyy hh:mm'}, r.surname, r.name,
+      /^\d+$/.test(r.group) ? +r.group : r.group, r.score, r.total, r.pct, r.passed ? 'Сдал' : 'Не сдал', r.attempt,
+      {t: 'n', v: Math.round(r.durationSec / 6) / 10, z: '0.0'}, ...g.ok.map(v => v ? 1 : 0)]); }
+
+  // Группы
+  const byG = new Map();
+  for (const r of rows){ if (!byG.has(r.group)) byG.set(r.group, []); byG.get(r.group).push(r); }
+  const groups = [['Группа', 'Участников', 'Средний %', 'Сдали', 'Доля сдавших, %']];
+  [...byG.entries()].sort((a, b) => a[0].localeCompare(b[0], 'ru', {numeric: true})).forEach(([g, rs]) => {
+    const p = rs.filter(r => r.passed).length;
+    groups.push([/^\d+$/.test(g) ? +g : g, rs.length, Math.round(rs.reduce((s, r) => s + r.pct, 0) / rs.length), p,
+      Math.round(p / rs.length * 100)]); });
+
+  // Вопросы
+  const qs = [['№', 'Вопрос', 'Тип', 'Ответили верно', 'Всего ответов', '% верных', 'Правильный ответ']];
+  Q.forEach((q, k) => { const ok = rows.filter(r => isCorrect(q, r.answers[k])).length;
+    qs.push([k + 1, q.q, typ[q.t], ok, rows.length, rows.length ? Math.round(ok / rows.length * 100) : 0, answerText(q, q.a)]); });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, sheet(people, [17, 18, 14, 9, 8, 6, 6, 10, 9, 12, ...Q.map(() => 5)]), 'Участники');
+  XLSX.utils.book_append_sheet(wb, sheet(groups, [10, 12, 11, 8, 16]), 'Группы');
+  XLSX.utils.book_append_sheet(wb, sheet(qs, [5, 70, 20, 15, 14, 10, 60]), 'Вопросы');
+  XLSX.writeFile(wb, `Итоговый_тест_${T.f.group ? 'группа_' + T.f.group + '_' : ''}${dayKey(new Date())}.xlsx`);
+  btn.disabled = false; btn.textContent = '⬇ Скачать Excel';
 }
 function exportCsv(rows){
   const head = ['Дата', 'Время', 'Фамилия', 'Имя', 'Группа', 'Баллы', 'Из', '%', 'Статус', 'Попытка', 'Длительность, мин',
