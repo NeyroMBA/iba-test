@@ -196,7 +196,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:16px}
 .wrap.wide{max-width:1320px}
 :root{--good:#1B8A4C;--mid:#E2C044;--low:#D7263D;--col:#EF8A4C}
 .dtool{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 12px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
-.kp4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+.kp5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:12px}
+.kp5 .kbig .t{min-height:2.6em;display:flex;align-items:center;justify-content:center;line-height:1.25}
 .kbig{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .kbig .t{font-size:17px;font-weight:700;color:#2D2D2D}
 .kbig .v{font-size:48px;font-weight:900;letter-spacing:-.03em;line-height:1.1;margin:6px 0 6px;color:var(--ink)}
@@ -239,7 +240,8 @@ table.tbl{width:100%;border-collapse:collapse;font-size:16px}
 #tip.on{opacity:1}
 @media (max-width:1100px){.dash{flex-wrap:wrap}.dcol{flex:1 1 calc(50% - 6px)}.dcol.c3{flex-basis:100%}}
 @media (max-width:760px){
-  .kp4{grid-template-columns:1fr 1fr}
+  .kp5{grid-template-columns:1fr 1fr}
+  .kp5>.kbig:first-child{grid-column:1/-1}
   .kbig .v{font-size:36px}
   .dcol,.dcol.c3{flex-basis:100%}
 }
@@ -779,10 +781,7 @@ function tabSummary(){
   if (!n){ $('#tab').innerHTML = `<div class="panel empty">${T.rows.length ? 'Под выбранные фильтры анкет нет.' : 'Пока никто не заполнил анкету.'}</div>`; return; }
   const q = qual.rows.map(r => ({r, st: stat(rows, `${qual.prefix}: ${r}`)}));
   const qp = pooled(rows, qual);
-  const best = it => it.rows.map(r => ({r, st: stat(rows, `${it.prefix}: ${r}`)})).filter(x => x.st.n).sort((a, b) => b.st.avg - a.st.avg)[0];
-  const bTopic = best(topics), bTask = best(tasks);
   const fc = freq.o.map(o => rows.filter(r => r.f[freq.col] === o).length), fmax = Math.max(1, ...fc);
-  const often = Math.round((fc[0] + fc[1]) / n * 100);
   const people = new Set(rows.map(personKey)).size;
   const shortQ = {'Лекции': 'Лекции, теория', 'Практические занятия': 'Практика', 'Обратная связь': 'Обратная связь'};
   const comments = [['liked', 'Понравилось'], ['result', 'Главный результат'], ['improve', 'Стоит доработать']].map(([id, t]) => {
@@ -797,17 +796,13 @@ function tabSummary(){
   $('#tab').innerHTML = `
     <div class="dtool"><span>${n} ${plural(n,'анкета','анкеты','анкет')} по выбранным фильтрам · наведите на график, чтобы увидеть детали</span>
       <button class="btn sm" id="xlsx">⬇ Скачать Excel</button></div>
-    <div class="kp4">
-      ${q.map(x => `<div class="kbig" data-tip="${esc(tipStat(x.r, x.st))}"><div class="t">${esc(shortQ[x.r] || x.r)}</div>
-        <div class="v">${fmtAvg(x.st.avg)}</div>${pill(x.st.avg)}</div>`).join('')}
+    <div class="kp5">
       <div class="kbig"><div class="t">Кол-во слушателей</div><div class="v">${people}</div>
         <span class="pill">${n} ${plural(n,'анкета','анкеты','анкет')}</span></div>
-    </div>
-    <div class="kp4">
-      <div class="kbig sm"><div class="t">средняя оценка обучения</div><div class="v">${fmtAvg(qp.avg)}</div>${pill(qp.avg)}</div>
-      <div class="kbig sm"><div class="t">применят еженедельно или чаще</div><div class="v">${often}%</div></div>
-      <div class="kbig sm"><div class="t">самая полезная тема${bTopic ? ' · ' + fmtAvg(bTopic.st.avg) : ''}</div><div class="v txt">${bTopic ? esc(bTopic.r) : '—'}</div></div>
-      <div class="kbig sm"><div class="t">лучшее творческое задание${bTask ? ' · ' + fmtAvg(bTask.st.avg) : ''}</div><div class="v txt">${bTask ? esc(bTask.r) : '—'}</div></div>
+      <div class="kbig" data-tip="${esc(`<b>Средняя оценка обучения</b><br>Лекции, практика и обратная связь вместе · ${qp.n} ${plural(qp.n,'оценка','оценки','оценок')}`)}">
+        <div class="t">Средняя оценка обучения</div><div class="v">${fmtAvg(qp.avg)}</div>${pill(qp.avg)}</div>
+      ${q.map(x => `<div class="kbig" data-tip="${esc(tipStat(x.r, x.st))}"><div class="t">${esc(shortQ[x.r] || x.r)}</div>
+        <div class="v">${fmtAvg(x.st.avg)}</div>${pill(x.st.avg)}</div>`).join('')}
     </div>
     <div class="dash"><div class="dcol c1">
       <div class="dp a-freq"><h3>Частота применения навыков с обучения</h3>
