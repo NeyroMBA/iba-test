@@ -1306,7 +1306,7 @@ const genPassword = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s =
   const r = crypto.getRandomValues(new Uint32Array(10)); for (const x of r) s += a[x % a.length]; return s; };
 const ACC_ERR = {bad_login: 'Логин — латинские буквы, цифры, точка, дефис или подчёркивание, от 3 до 30 символов (не admin).',
   bad_name: 'Выберите тренера.', short_password: 'Пароль — не короче 6 символов.', name_taken: 'У этого тренера уже есть вход.',
-  forbidden: 'Недостаточно прав.', unknown_action: 'Скрипт Google Таблицы ещё не обновлён — обновите его.',
+  forbidden: 'Недостаточно прав.', auth: 'Пароль администратора не подходит — выйдите и войдите заново (возможно, его поменяли в скрипте).', unknown_action: 'Скрипт Google Таблицы ещё не обновлён — обновите его.',
   not_stored: 'Этот пароль создан до обновления (или сменился пароль администратора) — посмотреть его нельзя. Нажмите «Новый пароль».'};
 function showCreds(name, login, pw){
   const link = baseUrl() + '?trainer';
@@ -1345,15 +1345,20 @@ async function tabAccess(){
         <div class="row"><button class="btn sm" id="aSave">Создать вход</button></div>`
       : '<p class="small">У всех тренеров из списка уже есть вход. Новых тренеров добавьте во вкладке «Вопросы» → «Тренеры».</p>'}
     </div>`;
-  const run = async (account, okMsg) => {
+  // inForm — ошибку показываем под формой добавления; для кнопок в таблице — всплывающим сообщением
+  const run = async (account, okMsg, inForm) => {
     const res = await api({action: 'account_save', ...authArgs(), account}).catch(() => ({ok: false, error: 'network'}));
-    if (!res.ok){ const m = ACC_ERR[res.error] || 'Не удалось сохранить. Проверьте интернет.'; if ($('#accErr')) $('#accErr').textContent = m; else toast(m); return false; }
+    if (!res.ok){
+      const m = ACC_ERR[res.error] || (res.error === 'network' ? 'Нет связи с Google Таблицей. Проверьте интернет.' : 'Не удалось сохранить: ' + res.error);
+      if (inForm && $('#accErr')) $('#accErr').textContent = m; else { toast(m); alert(m); }
+      return false;
+    }
     toast(okMsg); return true;
   };
   if ($('#aSave')) $('#aSave').onclick = async () => {
     const account = {name: $('#aName').value, login: $('#aLogin').value.trim().toLowerCase(), password: $('#aPw').value.trim()};
     $('#aSave').disabled = true;
-    if (await run(account, 'Вход создан')){ await tabAccess(); showCreds(account.name, account.login, account.password); }
+    if (await run(account, 'Вход создан', true)){ await tabAccess(); showCreds(account.name, account.login, account.password); }
     else $('#aSave').disabled = false;
   };
   $('#tab').onclick = async e => {
@@ -1368,7 +1373,10 @@ async function tabAccess(){
     if (b.dataset.act === 'accPw'){
       if (!confirm(`Сменить пароль тренеру ${name}? Старый пароль перестанет работать.`)) return;
       const pw = genPassword();
-      if (await run({login, name, password: pw}, 'Пароль изменён')) showCreds(name, login, pw);
+      b.disabled = true; b.textContent = 'Меняем…';
+      const ok = await run({login, name, password: pw}, 'Пароль изменён');
+      b.disabled = false; b.textContent = 'Новый пароль';
+      if (ok) showCreds(name, login, pw);
     }
     if (b.dataset.act === 'accDel'){
       if (!confirm(`Удалить вход тренера ${name}? Его анкеты и вопросы останутся.`)) return;
