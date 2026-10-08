@@ -196,7 +196,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:16px}
 .wrap.wide{max-width:1680px}
 :root{--good:#1B8A4C;--mid:#E2C044;--low:#D7263D;--col:#EF8A4C}
 .dtool{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 12px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
-.kp5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.kp5{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:12px}
 .kbig{background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px 14px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .kbig .t{font-size:15px;font-weight:700;color:#2D2D2D;line-height:1.25}
 .kbig .v{font-size:38px;font-weight:900;letter-spacing:-.03em;line-height:1.1;margin:2px 0 0;color:var(--ink)}
@@ -206,7 +206,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:16px}
 .kbig.sm .pill{order:3;margin-top:4px}
 .pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#2D2D2D}
 .pill i{width:10px;height:10px;border-radius:50%;display:inline-block}
-.dash{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-areas:"freq freq topics topics comm" "act act tasks tasks comm";gap:12px;align-items:stretch}
+.dash{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-areas:"freq freq topics topics comm comm" "act act tasks tasks comm comm";gap:12px;align-items:stretch}
 .a-freq{grid-area:freq}.a-topics{grid-area:topics}.a-act{grid-area:act}.a-tasks{grid-area:tasks}.a-comm{grid-area:comm}
 .dash .dp{display:flex;flex-direction:column;min-height:0}
 .dash .a-freq .cols{flex:1 1 auto}
@@ -282,7 +282,6 @@ table.tbl{width:100%;border-collapse:collapse;font-size:16px}
 @media (max-width:1100px){.dash{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"freq topics" "act tasks" "comm comm"}}
 @media (max-width:760px){
   .kp5{grid-template-columns:1fr 1fr}
-  .kp5>.kbig:first-child{grid-column:1/-1}
   .kbig .v{font-size:36px}
   .dash{grid-template-columns:minmax(0,1fr);grid-template-areas:"freq" "topics" "act" "tasks" "comm"}
 }
@@ -832,6 +831,11 @@ function tabSummary(){
   const qp = pooled(rows, qual);
   const fc = freq.o.map(o => rows.filter(r => r.f[freq.col] === o).length), fmax = Math.max(1, ...fc);
   const people = new Set(rows.map(personKey)).size;
+  // доля оценок «4» и «5» среди всех оценок анкеты (индекс удовлетворённости)
+  let hi = 0, all = 0;
+  for (const it of ITEMS.filter(x => x.type === 'scale')) for (const r of it.rows){
+    const st = stat(rows, `${it.prefix}: ${r}`); hi += st.d[3] + st.d[4]; all += st.n; }
+  const csat = all ? Math.round(hi / all * 100) : null;
   const shortQ = {'Лекции': 'Лекции, теория', 'Практические занятия': 'Практика', 'Обратная связь': 'Обратная связь'};
   const comments = [['liked', 'Понравилось'], ['result', 'Главный результат'], ['improve', 'Стоит доработать']].map(([id, t]) => {
     const it = byIt(id), list = rows.filter(r => String(r.f[it.col] || '').trim()).sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
@@ -849,6 +853,8 @@ function tabSummary(){
         <div class="t">Средняя оценка</div><div class="v">${fmtAvg(qp.avg)}</div></div>
       ${q.map(x => `<div class="kbig" data-tip="${esc(tipStat(x.r, x.st))}"><div class="t">${esc(shortQ[x.r] || x.r)}</div>
         <div class="v">${fmtAvg(x.st.avg)}</div></div>`).join('')}
+      <div class="kbig" data-tip="${esc(`<b>Доля оценок 4–5</b><br>${hi} из ${all} ${plural(all,'оценки','оценок','оценок')} — «4» или «5»<br>по лекциям, практике, темам и заданиям`)}">
+        <div class="t">Доля оценок 4–5</div><div class="v">${csat == null ? '—' : csat + '%'}</div></div>
     </div>
     <div class="dash">
       <div class="dp a-freq"><h3>Частота применения навыков с обучения</h3>
