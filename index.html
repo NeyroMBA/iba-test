@@ -284,6 +284,7 @@ const CONFIG = {
   MINUTES: 10,             // ориентировочное время, показывается на стартовом экране
   ALLOW_RETAKE: false,     // false — одна попытка: повторно пройти под тем же именем и группой нельзя
   SHOW_ANSWERS: true,      // показывать участнику правильные ответы в разборе
+  SURVEY_URL: 'anketa/',  // анкета участника: кнопка на экране результата; '' — не показывать
   DEMO_TRAINER_PASSWORD: 'trainer'   // пароль тренера только для демо-режима
 };
 
@@ -613,6 +614,7 @@ function showResult(){
       <div class="rev"><h3>Разбор ответов</h3>${rows}</div>
       <div class="row" style="margin-top:22px">
         ${CONFIG.ALLOW_RETAKE ? '<button type="button" class="btn" id="again">Пройти ещё раз</button>' : ''}
+        ${CONFIG.SURVEY_URL && !(ls.get('ibaSV.state.v1', null) || {}).done ? `<a class="btn" href="${CONFIG.SURVEY_URL}">Заполнить анкету о тренинге →</a>` : ''}
         <span class="grow"></span>
         <button type="button" class="btn ghost" id="exit">Завершить сеанс</button>
       </div>
@@ -621,7 +623,7 @@ function showResult(){
   if ($('#again')) $('#again').onclick = () => startTest(S.user);
   $('#exit').onclick = () => {
     if (!S.result.sent && !S.result.rejected && !confirm('Результат ещё не отправлен тренеру. Всё равно выйти? Отправка продолжится, когда вы снова откроете тест на этом устройстве.')) return;
-    S = null; ls.del(K.state); showLogin(); top0();
+    S = null; ls.del(K.state); ls.del('iba.lastUser.v1'); showLogin(); top0();
   };
   updateSendStatus();
 }
@@ -720,7 +722,8 @@ function showTrainer(){
   setKicker('Панель тренера'); $('#demo').hidden = true;
   $('#app').innerHTML = `
     <div class="thead"><h1>Результаты теста</h1>
-      <div class="acts"><button class="btn ghost sm" id="reload">↻ Обновить</button>
+      <div class="acts">${CONFIG.SURVEY_URL ? `<a class="btn ghost sm" href="${CONFIG.SURVEY_URL}?trainer">Анкеты →</a>` : ''}
+        <button class="btn ghost sm" id="reload">↻ Обновить</button>
         <button class="btn ghost sm" id="logout">Выйти</button></div></div>
     ${DEMO ? `<div class="demo">Демо-режим: показаны результаты из этого браузера.
       <button class="btn sm" id="seed">Добавить примеры</button><button class="btn ghost sm" id="wipe">Очистить</button></div>` : ''}

@@ -3,3 +3,6 @@
 !/index.html
 !/.nojekyll
 !/.gitignore
+!/anketa/
+/anketa/*
+!/anketa/index.html
