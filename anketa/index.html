@@ -835,7 +835,7 @@ function tabSummary(){
   const shortQ = {'Лекции': 'Лекции, теория', 'Практические занятия': 'Практика', 'Обратная связь': 'Обратная связь'};
   const comments = [['liked', 'Понравилось'], ['result', 'Главный результат'], ['improve', 'Стоит доработать']].map(([id, t]) => {
     const it = byIt(id), list = rows.filter(r => String(r.f[it.col] || '').trim()).sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
-    return `<div class="cl"><h4>${t}<em>${list.length}</em></h4><ul>${list.length ? list.map(r => `<li>${esc(r.f[it.col])}<span>${esc(r.surname)} ${esc(r.name)} · гр. ${esc(r.group)}${r.f['Тренер'] ? ' · ' + esc(r.f['Тренер']) : ''}</span></li>`).join('')
+    return `<div class="cl"><h4>${t}<em>${list.length}</em></h4><ul>${list.length ? list.map(r => `<li>${esc(r.f[it.col])}</li>`).join('')
       : '<li style="color:var(--muted)">Пока нет ответов</li>'}</ul></div>`;
   }).join('');
   const act = [['Качество обучения', qual], ['Учебная часть', topics], ['Творческие задания', tasks]].map(([t, it]) => {
