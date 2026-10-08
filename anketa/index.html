@@ -410,9 +410,7 @@ const CONFIG = {
   // Тот же адрес веб-приложения Google Apps Script, что и у итогового теста.
   // Пусто — демо-режим: ответы хранятся только в этом браузере.
   API_URL: 'https://script.google.com/macros/s/AKfycbxckKIQZr11lHgEvjKf3xImZSsOUjSytViYQEu4Vpw2Azg-o3Lx-Ruckd9yEOsKc_GvzQ/exec',
-  ONE_RESPONSE: true,      // одна анкета на участника (фамилия + имя + группа)
   MINUTES: 5,
-  TEST_URL: '../',         // итоговый тест (ссылка из панели тренера)
   DEMO_TRAINER_PASSWORD: 'trainer'
 };
 
@@ -478,7 +476,6 @@ const normName = s => String(s).replace(/\s+/g, ' ').trim().toLowerCase()
   .replace(/(^|[\s-])(\S)/g, (m, a, b) => a + b.toUpperCase());
 const normGroup = s => String(s).replace(/\s+/g, ' ').trim()
   .replace(/^(группа|гр\.?)\s*/i, '').replace(/^№\s*/, '').toUpperCase();
-const personKey = r => [r.surname, r.name, r.group].map(s => String(s).toLowerCase().replace(/ё/g, 'е')).join('|');
 const pad = n => String(n).padStart(2, '0');
 const fmtDate = iso => { const d = new Date(iso); return isNaN(d) ? '—' :
   `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
@@ -545,16 +542,10 @@ async function api(payload){
 }
 function demoApi(p){
   const db = ls.get(K.demo, []);
-  if (p.action === 'survey_check'){
-    const prev = db.find(x => personKey(x) === personKey(p));
-    return {ok: true, taken: !!prev, finishedAt: prev ? prev.finishedAt : null};
-  }
   if (p.action === 'survey_submit'){
     const r = p.record;
     if (!db.some(x => x.id === r.id)){
-      const prev = db.find(x => personKey(x) === personKey(r));
-      if (CONFIG.ONE_RESPONSE && prev) return {ok: false, error: 'already_taken', finishedAt: prev.finishedAt};
-      db.push({id: r.id, finishedAt: r.finishedAt, surname: r.surname, name: r.name, group: r.group, f: Object.fromEntries(r.fields)});
+      db.push({id: r.id, finishedAt: r.finishedAt, group: r.group, f: Object.fromEntries(r.fields)});
       ls.set(K.demo, db);
     }
     return {ok: true};
@@ -603,15 +594,9 @@ window.addEventListener('online', flushOutbox);
 let S = ls.get(K.state, null);
 const save = () => ls.set(K.state, S);
 
-function prefillUser(){
-  const last = ls.get(K.last, null);
-  if (last && last.surname) return last;
-  const t = ls.get(K.test, null);
-  return t && t.user ? t.user : {};
-}
 function showLogin(prefGroup = ''){
   setKicker('Анкета участника');
-  const u = prefillUser(), g = prefGroup || u.group || '';
+  const u = ls.get(K.last, null) || {}, g = prefGroup || u.group || '';
   $('#app').innerHTML = `
   <div class="hero">
     <section class="intro">
@@ -623,10 +608,8 @@ function showLogin(prefGroup = ''){
       <li><i>2</i><span>Можно вернуться назад и поменять ответ, пока анкета не отправлена.</span></li>
     </ul>
     <form class="card login" id="f" novalidate>
-      <h2>Представьтесь</h2>
-      <p class="small">Ответы увидит только команда тренинга.${CONFIG.ONE_RESPONSE ? ' Анкету можно заполнить <b>один раз</b>.' : ''}</p>
-      <label class="fld"><span>Фамилия</span><input name="surname" autocomplete="family-name" autocapitalize="words" enterkeyhint="next" required value="${esc(u.surname || '')}"></label>
-      <label class="fld"><span>Имя</span><input name="name" autocomplete="given-name" autocapitalize="words" enterkeyhint="next" required value="${esc(u.name || '')}"></label>
+      <h2>Анкета анонимная</h2>
+      <p class="small">Мы не спрашиваем имя — укажите только группу и тренера.</p>
       <label class="fld"><span>Номер группы</span><input name="group" autocomplete="off" enterkeyhint="next" required value="${esc(g)}"></label>
       <label class="fld"><span>Тренер</span><select name="trainer" required>
         <option value="">Выберите тренера</option>
@@ -640,35 +623,16 @@ function showLogin(prefGroup = ''){
   const f = $('#f');
   f.onsubmit = async e => {
     e.preventDefault();
-    const v = {surname: normName(f.surname.value), name: normName(f.name.value), group: normGroup(f.group.value), trainer: f.trainer.value};
+    const v = {group: normGroup(f.group.value), trainer: f.trainer.value};
     let bad = null;
-    for (const k of ['surname', 'name', 'group', 'trainer']){
-      const short = k === 'group' || k === 'trainer' ? !v[k] : v[k].length < 2;
-      f[k].classList.toggle('bad', short); if (short && !bad) bad = k;
-    }
-    if (bad){ $('#err').textContent = 'Заполните все поля: фамилию, имя, номер группы и выберите тренера.'; f[bad].focus(); return; }
+    for (const k of ['group', 'trainer']){ f[k].classList.toggle('bad', !v[k]); if (!v[k] && !bad) bad = k; }
+    if (bad){ $('#err').textContent = 'Укажите номер группы и выберите тренера.'; f[bad].focus(); return; }
     f.dataset.busy = '1';
-    if (CONFIG.ONE_RESPONSE){
-      const btn = f.querySelector('button'); btn.disabled = true; btn.textContent = 'Проверяем…';
-      const r = await Promise.race([api({action: 'survey_check', surname: v.surname, name: v.name, group: v.group}).catch(() => null), new Promise(res => setTimeout(res, 8000))]);
-      if (r && r.ok && r.taken) return showTaken(v, r.finishedAt);
-    }
     ls.set(K.last, v);
     S = {user: v, startedAt: new Date().toISOString(), step: 0, A: {}, done: null};
     save(); showSection(); top0();
   };
   $('#toTrainer').onclick = e => { e.preventDefault(); showTrainerLogin(); };
-}
-function showTaken(user, when){
-  $('#app').innerHTML = `
-    <div class="card" style="max-width:640px;margin:0 auto">
-      <h2>Анкета уже заполнена</h2>
-      <p class="lead" style="margin:10px 0 18px"><b>${esc(user.surname)} ${esc(user.name)}</b>, группа ${esc(user.group)},
-        уже заполнял(а) анкету${when ? ' ' + fmtDate(when) : ''}. Спасибо!</p>
-      <p class="small">Если это ошибка или вы однофамилец из той же группы — обратитесь к тренеру.</p>
-      <div class="row" style="margin-top:22px"><button type="button" class="btn ghost" id="back">← Назад</button></div>
-    </div>`;
-  $('#back').onclick = () => { showLogin(user.group); top0(); };
 }
 
 function itemHtml(it){
@@ -695,7 +659,7 @@ function showSection(){
   S.step = Math.max(0, Math.min(S.step || 0, SURVEY.sections.length - 1));
   const n = SURVEY.sections.length, i = S.step, sec = SURVEY.sections[i], last = i === n - 1;
   $('#app').innerHTML = `
-    <div class="qtop"><span class="who">${esc(S.user.surname)} ${esc(S.user.name)} · группа ${esc(S.user.group)}${S.user.trainer ? ' · тренер ' + esc(S.user.trainer) : ''}</span>
+    <div class="qtop"><span class="who">Группа ${esc(S.user.group)}${S.user.trainer ? ' · тренер ' + esc(S.user.trainer) : ''}</span>
       <span class="num">Раздел ${i + 1} из ${n}</span></div>
     <div class="bar"><i style="width:${i / n * 100}%"></i></div>
     <div class="card">
@@ -756,7 +720,7 @@ function finish(){
   const fin = new Date();
   const A = {...S.A};
   for (const it of ITEMS) if (it.type === 'text' && A[it.id]) A[it.id] = A[it.id].trim();
-  const rec = {id: uid(), surname: S.user.surname, name: S.user.name, group: S.user.group,
+  const rec = {id: uid(), group: S.user.group,
     startedAt: S.startedAt, finishedAt: fin.toISOString(), fields: [['Тренер', S.user.trainer || ''], ...toFields(A)]};
   S.done = {rec, sent: false}; save(); outboxAdd(rec);
   sendFailed = false; showThanks(); top0(); flushOutbox();
@@ -766,7 +730,7 @@ function showThanks(){
   $('#app').innerHTML = `
     <div class="card thanks">
       <div class="ok">✓</div>
-      <h2>Спасибо, ${esc(S.done.rec.name)}!</h2>
+      <h2>Спасибо!</h2>
       <p class="lead" style="margin:0 auto">Ваши ответы помогут нам сделать обучение ещё лучше.</p>
       <div class="send" id="send"></div>
       <div class="row">
@@ -775,7 +739,7 @@ function showThanks(){
     </div>`;
   $('#exit').onclick = () => {
     if (!S.done.sent && !S.done.rejected && !confirm('Ответы ещё не отправлены. Всё равно выйти? Отправка продолжится, когда вы снова откроете анкету на этом устройстве.')) return;
-    S = null; ls.del(K.state); ls.del(K.last); showLogin(); top0();
+    S = null; ls.del(K.state); showLogin(); top0();
   };
   updateSendStatus();
 }
@@ -842,8 +806,7 @@ function filtered(){
   return T.rows.filter(r =>
     (!f.group || r.group === f.group) && (!f.trainer || (r.f['Тренер'] || '') === f.trainer) &&
     (!f.from || dayKey(r.finishedAt) >= f.from) && (!f.to || dayKey(r.finishedAt) <= f.to) &&
-    (!q || (T.tab === 'list' ? `${r.surname} ${r.name}`.toLowerCase().includes(q)
-      : ITEMS.some(it => it.type === 'text' && String(r.f[it.col] || '').toLowerCase().includes(q)))));
+    (!q || ITEMS.some(it => it.type === 'text' && String(r.f[it.col] || '').toLowerCase().includes(q))));
 }
 const trainersList = () => [...new Set([...SURVEY.trainers, ...T.rows.map(r => r.f['Тренер']).filter(Boolean)])];
 const groupsList = () => [...new Set(T.rows.map(r => r.group))].sort((a, b) => a.localeCompare(b, 'ru', {numeric: true}));
@@ -861,7 +824,6 @@ function showTrainer(){
       <nav class="ttabs" role="tablist">${[['summary', 'Дашборд'], ['feedback', 'Отзывы'], ['list', 'Анкеты'], ['editor', 'Вопросы'], ['share', 'QR']]
         .map(([t, n]) => `<button type="button" role="tab" data-t="${t}">${n}</button>`).join('')}</nav>
       <div class="tacts">
-        <a class="tlink" href="${CONFIG.TEST_URL}?trainer"><span class="lg">Итоговый тест</span> <span aria-hidden="true">→</span></a>
         <button type="button" class="obtn" id="xlsx">${ICON.dl} Excel</button>
         <button type="button" class="ibtn" id="reload" title="Обновить данные" aria-label="Обновить данные">${ICON.rf}</button>
         <div class="menu" id="pmenu"><button type="button" class="ibtn" id="pbtn" title="Профиль" aria-label="Профиль" aria-haspopup="true">${ICON.user}</button>
@@ -917,7 +879,7 @@ function filterUi(){
   b.classList.toggle('set', !!(f.from || f.to));
   $('#filters [data-f=group]').classList.toggle('set', !!f.group);
   $('#filters [data-f=trainer]').classList.toggle('set', !!f.trainer);
-  $('#filters [data-f=q]').placeholder = T.tab === 'list' ? 'Поиск по фамилии' : 'Поиск по отзывам';
+  $('#filters [data-f=q]').placeholder = 'Поиск по отзывам';
   $('#freset').disabled = !(f.group || f.trainer || f.from || f.to || f.q);
 }
 // всплывающие меню закрываются кликом мимо
@@ -978,7 +940,7 @@ function tabSummary(){
   const qp = pooled(rows, qual);
   const fo = [...new Set([...freq.o, ...rows.map(r => r.f[freq.col]).filter(Boolean)])];
   const fc = fo.map(o => rows.filter(r => r.f[freq.col] === o).length), fmax = Math.max(1, ...fc);
-  const people = new Set(rows.map(personKey)).size;
+  const people = n;   // анкета анонимная: одна анкета — один слушатель
   // доля оценок «4» и «5» среди всех оценок анкеты (индекс удовлетворённости)
   let hi = 0, all = 0;
   for (const it of ITEMS.filter(x => x.type === 'scale')) for (const r of rowsOf(it, rows)){
@@ -1041,7 +1003,7 @@ function tabFeedback(){
     const ans = rows.filter(r => String(r.f[it.col] || '').trim());
     return `<div class="panel"><h3>${esc(it.q)}</h3><p class="sub">${ans.length} ${plural(ans.length,'ответ','ответа','ответов')}</p>
       ${ans.length ? ans.map(r => `<div class="fb"><p>${esc(r.f[it.col])}</p>
-        <span>${esc(r.surname)} ${esc(r.name)} · группа ${esc(r.group)} · ${fmtDate(r.finishedAt)}</span></div>`).join('')
+        <span>Группа ${esc(r.group)}${r.f['Тренер'] ? ' · ' + esc(r.f['Тренер']) : ''} · ${fmtDate(r.finishedAt)}</span></div>`).join('')
         : '<div class="empty">Ответов нет.</div>'}</div>`; }).join('');
 }
 function tabList(){
@@ -1049,20 +1011,20 @@ function tabList(){
   const qual = ITEMS.find(it => it.id === 'quality'), freq = ITEMS.find(it => it.id === 'freq');
   const qa = r => { const v = rowsOf(qual, [r]).map(x => +r.f[`${qual.prefix}: ${x}`]).filter(x => x >= 1); return v.length ? v.reduce((a, b) => a + b) / v.length : null; };
   $('#tab').innerHTML = `<div class="panel"><h3><span>Анкеты: ${rows.length}</span></h3>
-    ${rows.length ? `<table class="tbl desk"><thead><tr><th>Дата</th><th>Участник</th><th>Группа</th><th>Тренер</th><th>Применение</th><th>Оценка обучения</th></tr></thead>
-      <tbody>${rows.map(r => `<tr data-id="${esc(r.id)}"><td>${fmtDate(r.finishedAt)}</td><td><b>${esc(r.surname)} ${esc(r.name)}</b></td>
-        <td>${esc(r.group)}</td><td>${esc(r.f['Тренер'] || '—')}</td><td>${esc(r.f[freq.col] || '—')}</td><td><span class="avg" style="background:${avgColor(qa(r))}">${fmtAvg(qa(r))}</span></td></tr>`).join('')}</tbody></table>
-      <div class="cards">${rows.map(r => `<div class="rc" data-id="${esc(r.id)}"><div class="l1"><span>${esc(r.surname)} ${esc(r.name)}</span>
+    ${rows.length ? `<table class="tbl desk"><thead><tr><th>Дата</th><th>Группа</th><th>Тренер</th><th>Применение</th><th>Оценка обучения</th></tr></thead>
+      <tbody>${rows.map(r => `<tr data-id="${esc(r.id)}"><td>${fmtDate(r.finishedAt)}</td>
+        <td><b>${esc(r.group)}</b></td><td>${esc(r.f['Тренер'] || '—')}</td><td>${esc(r.f[freq.col] || '—')}</td><td><span class="avg" style="background:${avgColor(qa(r))}">${fmtAvg(qa(r))}</span></td></tr>`).join('')}</tbody></table>
+      <div class="cards">${rows.map(r => `<div class="rc" data-id="${esc(r.id)}"><div class="l1"><span>Группа ${esc(r.group)}</span>
         <span class="avg" style="background:${avgColor(qa(r))}">${fmtAvg(qa(r))}</span></div>
-        <div class="l2">Группа ${esc(r.group)}${r.f['Тренер'] ? ' · ' + esc(r.f['Тренер']) : ''} · ${fmtDate(r.finishedAt)} · ${esc(r.f[freq.col] || '—')}</div></div>`).join('')}</div>`
+        <div class="l2">${r.f['Тренер'] ? esc(r.f['Тренер']) + ' · ' : ''}${fmtDate(r.finishedAt)} · ${esc(r.f[freq.col] || '—')}</div></div>`).join('')}</div>`
     : `<div class="empty">${T.rows.length ? 'Под выбранные фильтры анкет нет.' : 'Пока никто не заполнил анкету.'}</div>`}</div>`;
   $$('#tab [data-id]').forEach(el => el.onclick = () => openDetail(el.dataset.id));
 
 }
 function openDetail(id){
   const r = T.rows.find(x => x.id === id); if (!r) return;
-  openModal(`<p class="kick" style="margin:0 0 6px">Группа ${esc(r.group)}${r.f['Тренер'] ? ' · тренер ' + esc(r.f['Тренер']) : ''} · ${fmtDate(r.finishedAt)}</p>
-    <h2 style="font-size:28px;margin-right:50px">${esc(r.surname)} ${esc(r.name)}</h2>
+  openModal(`<p class="kick" style="margin:0 0 6px">${fmtDate(r.finishedAt)}</p>
+    <h2 style="font-size:28px;margin-right:50px">Группа ${esc(r.group)}${r.f['Тренер'] ? ' · ' + esc(r.f['Тренер']) : ''}</h2>
     <dl class="det">${ITEMS.map(it => it.type === 'scale'
       ? `<dt>${esc(it.q)}</dt><dd>${rowsOf(it, [r]).map(x => { const v = r.f[`${it.prefix}: ${x}`];
           return `<div class="srate"><span>${esc(x)}</span><b>${v === '' || v == null ? '—' : esc(v)}</b></div>`; }).join('')}</dd>`
@@ -1219,8 +1181,8 @@ async function exportXlsx(rows){
   const heads = COLS.map(c => c.h);
   for (const r of sorted) for (const h in r.f) if (h !== 'Тренер' && !heads.includes(h) && r.f[h] !== '' && r.f[h] != null) heads.push(h);
   const isNum = h => COLS.some(c => c.h === h && c.it.type === 'scale') || /: /.test(h);
-  const answers = [['Дата', 'Фамилия', 'Имя', 'Группа', 'Тренер', ...heads]];
-  for (const r of sorted) answers.push([{t: 'n', v: xlDate(r.finishedAt), z: 'dd.mm.yyyy hh:mm'}, r.surname, r.name,
+  const answers = [['Дата', 'Группа', 'Тренер', ...heads]];
+  for (const r of sorted) answers.push([{t: 'n', v: xlDate(r.finishedAt), z: 'dd.mm.yyyy hh:mm'},
     /^\d+$/.test(r.group) ? +r.group : r.group, r.f['Тренер'] || '',
     ...heads.map(h => { const v = r.f[h]; return isNum(h) && v !== '' && v != null && !isNaN(+v) ? +v : (v ?? ''); })]);
   const groups = [...new Set(sorted.map(r => r.group))].sort((a, b) => a.localeCompare(b, 'ru', {numeric: true}));
@@ -1236,7 +1198,7 @@ async function exportXlsx(rows){
   const fr = [['Как часто будет применять', 'Ответов', 'Доля, %']];
   [...new Set([...freq.o, ...sorted.map(r => r.f[freq.col]).filter(Boolean)])].forEach(o => { const c = sorted.filter(r => r.f[freq.col] === o).length; fr.push([o, c, sorted.length ? Math.round(c / sorted.length * 100) : 0]); });
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, sheet(answers, [17, 16, 14, 9, 18, ...heads.map(h => isNum(h) ? 12 : 40)]), 'Ответы');
+  XLSX.utils.book_append_sheet(wb, sheet(answers, [17, 9, 18, ...heads.map(h => isNum(h) ? 12 : 40)]), 'Ответы');
   XLSX.utils.book_append_sheet(wb, sheet(scores, [10, 36, 9, 8, 5, 5, 5, 5, 5, ...groups.map(() => 11), ...trs.map(() => 17)]), 'Оценки');
   XLSX.utils.book_append_sheet(wb, sheet(fr, [30, 10, 10]), 'Применение');
   XLSX.writeFile(wb, `Анкета_${T.f.group ? 'группа_' + T.f.group + '_' : ''}${T.f.trainer ? T.f.trainer.replace(/\s+/g, '_') + '_' : ''}${dayKey(new Date())}.xlsx`);
@@ -1278,8 +1240,7 @@ $('#qrbigx').onclick = () => $('#qrbig').classList.remove('on');
 
 /* --- демо-данные --- */
 function seedDemo(){
-  const people = [['Иванова','Анна','15 БР'],['Петров','Дмитрий','15 БР'],['Смирнова','Елена','15 БР'],['Кузнецов','Сергей','15 БР'],
-    ['Соколова','Мария','16'],['Попов','Алексей','16'],['Лебедева','Ольга','16'],['Козлов','Игорь','16'],['Новикова','Наталья','16']];
+  const people = ['15 БР', '15 БР', '15 БР', '15 БР', '16', '16', '16', '16', '16'].map(g => [0, 0, g]);
   const liked = ['Много практики на реальных примерах', 'Разбор наших дашбордов', 'Power Query — сэкономит часы работы', 'Подача материала и обратная связь', ''];
   const improve = ['Больше времени на Power Pivot', 'Добавить домашние задания между занятиями', 'Раздаточные материалы заранее', 'Всё отлично, ничего менять не нужно'];
   const db = ls.get(K.demo, []), now = Date.now();
@@ -1289,7 +1250,7 @@ function seedDemo(){
       liked: liked[i % liked.length], improve: improve[i % improve.length]};
     for (const it of ITEMS.filter(it => it.type === 'scale')){
       A[it.id] = {}; it.rows.forEach(r => { if (Math.random() < .93) A[it.id][r] = Math.max(1, Math.min(5, Math.round(bias + Math.random() * 1.6 - .8))); }); }
-    db.push({id: uid(), surname: s, name: n, group: g, finishedAt: new Date(now - (g === '16' ? 1 : 8) * 864e5 - i * 4e5).toISOString(),
+    db.push({id: uid(), group: g, finishedAt: new Date(now - (g === '16' ? 1 : 8) * 864e5 - i * 4e5).toISOString(),
       f: Object.fromEntries([['Тренер', SURVEY.trainers[i % SURVEY.trainers.length]], ...toFields(A)])});
   });
   ls.set(K.demo, db);
@@ -1321,9 +1282,9 @@ async function boot(){
   // если вопросы обновились, пока участник на экране входа, — перерисуем форму, сохранив введённое
   fresh.then(() => {
     const f = $('#f'); if (!f || f.dataset.busy) return;
-    const v = {surname: f.surname.value, name: f.name.value, group: f.group.value, trainer: f.trainer.value};
+    const v = {group: f.group.value, trainer: f.trainer.value};
     showLogin(v.group);
-    const g = $('#f'); g.surname.value = v.surname; g.name.value = v.name; g.group.value = v.group;
+    const g = $('#f'); g.group.value = v.group;
     if (SURVEY.trainers.includes(v.trainer)) g.trainer.value = v.trainer;
   });
   if (ls.get(K.outbox, []).length) flushOutbox();
