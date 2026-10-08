@@ -255,7 +255,7 @@ const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbxckKIQZr11lHgEvjKf3xImZSsOUjSytViYQEu4Vpw2Azg-o3Lx-Ruckd9yEOsKc_GvzQ/exec',
   ONE_RESPONSE: true,      // одна анкета на участника (фамилия + имя + группа)
   MINUTES: 5,
-  TEST_URL: '../',         // ссылка на итоговый тест (кнопка на экране «Спасибо»)
+  TEST_URL: '../',         // итоговый тест (ссылка из панели тренера)
   DEMO_TRAINER_PASSWORD: 'trainer'
 };
 
@@ -560,7 +560,6 @@ function finish(){
 }
 function showThanks(){
   setKicker('Анкета участника');
-  const t = ls.get(K.test, null), testDone = t && t.result;
   $('#app').innerHTML = `
     <div class="card thanks">
       <div class="ok">✓</div>
@@ -568,7 +567,6 @@ function showThanks(){
       <p class="lead" style="margin:0 auto">Ваши ответы помогут нам сделать обучение ещё лучше.</p>
       <div class="send" id="send"></div>
       <div class="row">
-        ${testDone ? '' : `<a class="btn" href="${CONFIG.TEST_URL}">Перейти к итоговому тесту →</a>`}
         <button type="button" class="btn ghost" id="exit">Завершить</button>
       </div>
     </div>`;
