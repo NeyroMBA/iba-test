@@ -276,6 +276,19 @@ table.tbl{width:100%;border-collapse:collapse;font-size:16px}
   .dp{padding:10px 12px}
   .dp h3{margin-bottom:6px}
 }
+.ed .ed2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.ed .fld{margin-top:10px}
+.ed .fld>span{font-size:13px}
+.ed textarea.ctl{font:inherit;font-size:15px;line-height:1.4;resize:vertical;width:100%;border:1.5px solid var(--line);border-radius:12px;padding:8px 10px}
+.ed input.ctl{width:100%}
+.ed input[readonly]{background:var(--soft);color:var(--muted)}
+.edsec{display:flex;gap:10px;align-items:flex-end}
+.edit{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:12px;background:var(--paper)}
+.edhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:15px}
+.mv{display:flex;gap:4px;margin-left:auto}
+.mv .btn.sm{min-height:34px;padding:4px 11px}
+#edErr{min-height:0}
+@media (max-width:720px){.ed .ed2{grid-template-columns:1fr}}
 #tip{position:fixed;z-index:90;background:var(--ink);color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.45;
   pointer-events:none;opacity:0;transition:opacity .1s;max-width:280px;left:0;top:0}
 #tip.on{opacity:1}
@@ -352,17 +365,19 @@ const CONFIG = {
   ONE_RESPONSE: true,      // одна анкета на участника (фамилия + имя + группа)
   MINUTES: 5,
   TEST_URL: '../',         // итоговый тест (ссылка из панели тренера)
-  TRAINERS: ['Шмаль Елена', 'Филенкова Дарья', 'Зыкина Анна', 'Колоколов Алексей'],   // список «Тренер» в анкете
   DEMO_TRAINER_PASSWORD: 'trainer'
 };
 
-/* ======================= ВОПРОСЫ АНКЕТЫ =======================
+/* ======================= ВОПРОСЫ АНКЕТЫ (исходный вариант) =======================
+   Тренер меняет вопросы в панели тренера (вкладка «Вопросы») — сохранённая версия хранится
+   в Google Таблице и подгружается при открытии анкеты. Здесь — вариант по умолчанию.
    type: "choice" — один вариант, "text" — свободный ответ, "scale" — оценки 1–5 по строкам.
    col — заголовок столбца в таблице; для "scale" столбцы называются «prefix: строка». */
-const SURVEY = {
-  title: 'Анкета участника тренинга <em>«Визуализация данных»</em>',
+const DEFAULT_SURVEY = {
+  title: 'Анкета участника тренинга «Визуализация данных»',
   intro: 'Мы хотим обучать сотрудников компаний лучше, чем это делают остальные. Поэтому нам важно ваше мнение. Пожалуйста, заполните анкету — это займёт не больше 5 минут.',
   sign: 'С уважением, Институт бизнес-аналитики',
+  trainers: ['Шмаль Елена', 'Филенкова Дарья', 'Зыкина Анна', 'Колоколов Алексей'],
   sections: [
     {title: 'Применение и результат', items: [
       {id: 'freq', type: 'choice', col: 'Как часто будет применять навыки', required: true,
@@ -372,18 +387,18 @@ const SURVEY = {
         q: 'Что вы считаете своим главным результатом от тренинга?'}
     ]},
     {title: 'Качество обучения', items: [
-      {id: 'quality', type: 'scale', prefix: 'Качество',
+      {id: 'quality', type: 'scale', prefix: 'Качество', label: 'Качество обучения',
         q: 'Оцените, пожалуйста, качество лекций, практических занятий и обратной связи',
         rows: ['Лекции', 'Практические занятия', 'Обратная связь']}
     ]},
     {title: 'Учебная часть', items: [
-      {id: 'topics', type: 'scale', prefix: 'Тема',
+      {id: 'topics', type: 'scale', prefix: 'Тема', label: 'Учебная часть',
         q: 'Какие темы оказались для вас наиболее интересными и полезными?',
         rows: ['Правила визуализации данных', 'Нестандартная визуализация', 'Подготовка данных', 'Обработка данных',
           'Информационные панели (дашборды)', 'Power Pivot (модель данных)', 'Дизайн дашборда и цветовая схема', 'Power Query']}
     ]},
     {title: 'Творческие задания', items: [
-      {id: 'tasks', type: 'scale', prefix: 'Задание',
+      {id: 'tasks', type: 'scale', prefix: 'Задание', label: 'Творческие задания',
         q: 'Какие творческие задания оказались для вас наиболее интересными и полезными?',
         rows: ['Визуализация тезисов', 'Нестандартная диаграмма', 'Макет годового отчёта']}
     ]},
@@ -402,7 +417,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const DEMO = !CONFIG.API_URL;
 const K = {state: 'ibaSV.state.v1', outbox: 'ibaSV.outbox.v1', demo: 'ibaSV.demoDB.v1', trainer: 'ibaFT.trainer.v1',
-  last: 'iba.lastUser.v1', test: 'ibaFT.state.v1'};
+  last: 'iba.lastUser.v1', test: 'ibaFT.state.v1', cfg: 'ibaSV.cfg.v1', demoCfg: 'ibaSV.demoCfg.v1'};
 const mkStore = area => ({
   get(k, d){ try { const v = area().getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
   set(k, v){ try { area().setItem(k, JSON.stringify(v)); } catch(e){} },
@@ -428,13 +443,45 @@ const top0 = () => window.scrollTo({top: 0, behavior: 'smooth'});
 const fmtAvg = v => v == null ? '—' : v.toFixed(1).replace('.', ',');
 const avgColor = v => v == null ? '#EEF0EA' : v >= 4.5 ? '#D6EFDF' : v >= 3.5 ? '#E9F4D2' : v >= 2.5 ? '#FBF0C9' : '#FBE0E3';
 
-/* ---------- столбцы анкеты ---------- */
-const COLS = [];
-for (const s of SURVEY.sections) for (const it of s.items){
-  if (it.type === 'scale') it.rows.forEach(r => COLS.push({it, row: r, h: `${it.prefix}: ${r}`}));
-  else COLS.push({it, h: it.col});
+/* ---------- вопросы и столбцы анкеты ---------- */
+const clone = o => JSON.parse(JSON.stringify(o));
+// основные вопросы, на которых построен дашборд: их можно править, но не удалять
+const CORE = {freq: 'choice', result: 'text', quality: 'scale', topics: 'scale', tasks: 'scale', liked: 'text', improve: 'text'};
+let SURVEY = clone(DEFAULT_SURVEY), COLS = [], ITEMS = [];
+function validSurvey(c){
+  try {
+    if (!c || !Array.isArray(c.sections) || !c.title) return false;
+    const items = c.sections.flatMap(s => s.items || []);
+    if (Object.keys(CORE).some(id => !items.some(it => it.id === id && it.type === CORE[id]))) return false;
+    return items.every(it => it.id && it.q && (it.type === 'scale' ? Array.isArray(it.rows) && it.prefix
+      : it.type === 'choice' ? Array.isArray(it.o) && it.col : it.type === 'text' && it.col));
+  } catch(e){ return false; }
 }
-const ITEMS = SURVEY.sections.flatMap(s => s.items);
+function applySurvey(c){
+  SURVEY = validSurvey(c) ? clone(c) : clone(DEFAULT_SURVEY);
+  if (!Array.isArray(SURVEY.trainers) || !SURVEY.trainers.length) SURVEY.trainers = clone(DEFAULT_SURVEY.trainers);
+  COLS = [];
+  for (const s of SURVEY.sections) for (const it of s.items){
+    if (it.type === 'scale') it.rows.forEach(r => COLS.push({it, row: r, h: `${it.prefix}: ${r}`}));
+    else COLS.push({it, h: it.col});
+  }
+  ITEMS = SURVEY.sections.flatMap(s => s.items);
+}
+applySurvey(DEFAULT_SURVEY);
+// актуальная версия вопросов — из Google Таблицы; без связи — последняя сохранённая на устройстве
+async function loadSurvey(){
+  try {
+    const r = await Promise.race([api({action: 'survey_config_get'}), new Promise(res => setTimeout(res, 7000))]);
+    if (r && r.ok){
+      if (r.config && validSurvey(r.config)){ applySurvey(r.config); ls.set(K.cfg, r.config); }
+      else { applySurvey(DEFAULT_SURVEY); ls.del(K.cfg); }
+      return;
+    }
+  } catch(e){}
+  const c = ls.get(K.cfg, null);
+  if (c && validSurvey(c)) applySurvey(c);
+}
+const titleHtml = t => esc(t).replace(/«([^»]+)»/, '<em>«$1»</em>');
 const toFields = A => COLS.map(c => [c.h, c.row ? (A[c.it.id] || {})[c.row] ?? '' : A[c.it.id] ?? '']);
 
 /* ---------- хранилище ---------- */
@@ -466,6 +513,11 @@ function demoApi(p){
   if (p.action === 'survey_results'){
     if (p.password !== CONFIG.DEMO_TRAINER_PASSWORD) return {ok: false, error: 'auth'};
     return {ok: true, rows: db};
+  }
+  if (p.action === 'survey_config_get') return {ok: true, config: ls.get(K.demoCfg, null)};
+  if (p.action === 'survey_config_set'){
+    if (p.password !== CONFIG.DEMO_TRAINER_PASSWORD) return {ok: false, error: 'auth'};
+    ls.set(K.demoCfg, p.config); return {ok: true};
   }
   return {ok: false, error: 'unknown_action'};
 }
@@ -514,8 +566,8 @@ function showLogin(prefGroup = ''){
   $('#app').innerHTML = `
   <div class="hero">
     <section class="intro">
-      <h1>${SURVEY.title}</h1>
-      <p class="lead">${SURVEY.intro}</p>
+      <h1>${titleHtml(SURVEY.title)}</h1>
+      <p class="lead">${esc(SURVEY.intro)}</p>
     </section>
     <ul class="rules">
       <li><i>1</i><span>Обязательные вопросы отмечены <b style="color:var(--red)">*</b>, остальные — по желанию.</span></li>
@@ -529,10 +581,10 @@ function showLogin(prefGroup = ''){
       <label class="fld"><span>Номер группы</span><input name="group" autocomplete="off" enterkeyhint="next" required value="${esc(g)}"></label>
       <label class="fld"><span>Тренер</span><select name="trainer" required>
         <option value="">Выберите тренера</option>
-        ${CONFIG.TRAINERS.map(t => `<option ${t === u.trainer ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+        ${SURVEY.trainers.map(t => `<option ${t === u.trainer ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
       <p class="err" id="err" role="alert"></p>
       <button class="btn wide">Заполнить анкету →</button>
-      <p class="sign">${SURVEY.sign}</p>
+      <p class="sign">${esc(SURVEY.sign)}</p>
     </form>
   </div>
   <p class="foot"><a href="?trainer" id="toTrainer">Вход для тренера</a></p>`;
@@ -742,7 +794,7 @@ function filtered(){
     (!q || `${r.surname} ${r.name}`.toLowerCase().includes(q) ||
       ITEMS.some(it => it.type === 'text' && String(r.f[it.col] || '').toLowerCase().includes(q))));
 }
-const trainersList = () => [...new Set([...CONFIG.TRAINERS, ...T.rows.map(r => r.f['Тренер']).filter(Boolean)])];
+const trainersList = () => [...new Set([...SURVEY.trainers, ...T.rows.map(r => r.f['Тренер']).filter(Boolean)])];
 const groupsList = () => [...new Set(T.rows.map(r => r.group))].sort((a, b) => a.localeCompare(b, 'ru', {numeric: true}));
 function stat(rows, h){
   const d = [0, 0, 0, 0, 0]; let s = 0, n = 0;
@@ -761,7 +813,7 @@ function showTrainer(){
       <button class="btn sm" id="seed">Добавить примеры</button><button class="btn ghost sm" id="wipe">Очистить</button></div>` : ''}
     <nav class="tabs">
       <button data-t="summary">Дашборд</button><button data-t="feedback">Отзывы</button>
-      <button data-t="list">Анкеты</button><button data-t="share">Ссылка<span class="lg"> и QR</span></button>
+      <button data-t="list">Анкеты</button><button data-t="editor">Вопросы</button><button data-t="share">Ссылка<span class="lg"> и QR</span></button>
     </nav>
     <div id="filters"></div><div id="tab"></div>`;
   $$('.tabs button').forEach(b => b.onclick = () => { T.tab = b.dataset.t; renderTab(); });
@@ -793,8 +845,9 @@ function renderFilters(){
 }
 function renderTab(){
   $$('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === T.tab));
-  $('#filters').hidden = T.tab === 'share';
-  ({summary: tabSummary, feedback: tabFeedback, list: tabList, share: tabShare})[T.tab]();
+  $('#filters').hidden = T.tab === 'share' || T.tab === 'editor';
+  $('#tab').onclick = $('#tab').oninput = $('#tab').onchange = null;
+  ({summary: tabSummary, feedback: tabFeedback, list: tabList, editor: tabEditor, share: tabShare})[T.tab]();
 }
 
 /* --- вкладка «Дашборд» --- */
@@ -802,15 +855,22 @@ const status = v => v == null ? {c: '#D9DCD4', t: 'нет оценок'} : v >= 
   : v >= 4 ? {c: 'var(--mid)', t: 'хорошо'} : {c: 'var(--low)', t: 'есть над чем работать'};
 const tipStat = (name, st) => `<b>${esc(name)}</b><br>Средняя: ${fmtAvg(st.avg)} · ${st.n} ${plural(st.n,'оценка','оценки','оценок')}`
   + (st.n ? `<br>${st.d.map((c, k) => `«${k + 1}» — ${c}`).join(', ')}` : '');
+// пункты оценки: текущие + встречающиеся в собранных ответах (если пункт переименовали или убрали)
+function rowsOf(it, rows){
+  const set = new Set(it.rows), pre = it.prefix + ': ';
+  for (const r of rows) for (const h in r.f) if (h.startsWith(pre) && +r.f[h] >= 1) set.add(h.slice(pre.length));
+  return [...set];
+}
 function pooled(rows, it){
   let s = 0, n = 0;
-  for (const r of it.rows){ const st = stat(rows, `${it.prefix}: ${r}`); s += (st.avg || 0) * st.n; n += st.n; }
+  for (const r of rowsOf(it, rows)){ const st = stat(rows, `${it.prefix}: ${r}`); s += (st.avg || 0) * st.n; n += st.n; }
   return {avg: n ? s / n : null, n};
 }
 const rbar = (name, st, tip) => `<div class="rbar" data-tip="${esc(tip || tipStat(name, st))}"><span class="n">${esc(name)}</span>
   <span class="tr"><s><i style="width:${st.avg ? st.avg / 5 * 100 : 0}%;background:${status(st.avg).c}"></i></s><b>${fmtAvg(st.avg)}</b></span></div>`;
 function ratingPanel(it, rows, area, title){
-  const list = it.rows.map(r => ({r, st: stat(rows, `${it.prefix}: ${r}`)})).sort((a, b) => (b.st.avg ?? -1) - (a.st.avg ?? -1));
+  const list = rowsOf(it, rows).map(r => ({r, st: stat(rows, `${it.prefix}: ${r}`)})).filter(x => x.st.n || it.rows.includes(x.r))
+    .sort((a, b) => (b.st.avg ?? -1) - (a.st.avg ?? -1));
   return `<div class="dp ${area}"><h3>${title}</h3><div class="body">${list.map(x => rbar(x.r, x.st)).join('')}</div></div>`;
 }
 // дашборд занимает остаток экрана: всё видно без прокрутки страницы, длинные списки прокручиваются внутри
@@ -827,27 +887,30 @@ function tabSummary(){
   const byIt = id => ITEMS.find(it => it.id === id);
   const qual = byIt('quality'), topics = byIt('topics'), tasks = byIt('tasks'), freq = byIt('freq');
   if (!n){ $('#tab').innerHTML = `<div class="panel empty">${T.rows.length ? 'Под выбранные фильтры анкет нет.' : 'Пока никто не заполнил анкету.'}</div>`; return; }
-  const q = qual.rows.map(r => ({r, st: stat(rows, `${qual.prefix}: ${r}`)}));
+  const q = rowsOf(qual, rows).map(r => ({r, st: stat(rows, `${qual.prefix}: ${r}`)})).filter(x => x.st.n || qual.rows.includes(x.r));
   const qp = pooled(rows, qual);
-  const fc = freq.o.map(o => rows.filter(r => r.f[freq.col] === o).length), fmax = Math.max(1, ...fc);
+  const fo = [...new Set([...freq.o, ...rows.map(r => r.f[freq.col]).filter(Boolean)])];
+  const fc = fo.map(o => rows.filter(r => r.f[freq.col] === o).length), fmax = Math.max(1, ...fc);
   const people = new Set(rows.map(personKey)).size;
   // доля оценок «4» и «5» среди всех оценок анкеты (индекс удовлетворённости)
   let hi = 0, all = 0;
-  for (const it of ITEMS.filter(x => x.type === 'scale')) for (const r of it.rows){
+  for (const it of ITEMS.filter(x => x.type === 'scale')) for (const r of rowsOf(it, rows)){
     const st = stat(rows, `${it.prefix}: ${r}`); hi += st.d[3] + st.d[4]; all += st.n; }
   const csat = all ? Math.round(hi / all * 100) : null;
   const shortQ = {'Лекции': 'Лекции, теория', 'Практические занятия': 'Практика', 'Обратная связь': 'Обратная связь'};
-  const comments = [['liked', 'Понравилось'], ['result', 'Главный результат'], ['improve', 'Стоит доработать']].map(([id, t]) => {
-    const it = byIt(id), list = rows.filter(r => String(r.f[it.col] || '').trim()).sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
+  const cTitle = {liked: 'Понравилось', result: 'Главный результат', improve: 'Стоит доработать'};
+  const texts = ['liked', 'result', 'improve'].map(byIt).concat(ITEMS.filter(it => it.type === 'text' && !CORE[it.id]));
+  const comments = texts.map(it => [it, cTitle[it.id] || it.col]).map(([it, t]) => {
+    const list = rows.filter(r => String(r.f[it.col] || '').trim()).sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
     return `<div class="cl"><h4>${t}<em>${list.length}</em></h4><ul>${list.length ? list.map(r => `<li>${esc(r.f[it.col])}</li>`).join('')
       : '<li style="color:var(--muted)">Пока нет ответов</li>'}</ul></div>`;
   }).join('');
-  const act = [['Качество обучения', qual], ['Учебная часть', topics], ['Творческие задания', tasks]].map(([t, it]) => {
+  const act = ITEMS.filter(it => it.type === 'scale').map(it => [it.label || it.prefix, it]).map(([t, it]) => {
     const st = pooled(rows, it);
     return rbar(t, st, `<b>${t}</b><br>Средняя по всем пунктам: ${fmtAvg(st.avg)} · ${st.n} ${plural(st.n,'оценка','оценки','оценок')}`);
   }).join('');
   $('#tab').innerHTML = `
-    <div class="kp5">
+    <div class="kp5" style="grid-template-columns:repeat(${q.length + 3},minmax(0,1fr))">
       <div class="kbig" data-tip="${esc(`<b>Кол-во слушателей</b><br>${n} ${plural(n,'анкета','анкеты','анкет')} по выбранным фильтрам`)}"><div class="t">Кол-во слушателей</div><div class="v">${people}</div></div>
       <div class="kbig" data-tip="${esc(`<b>Средняя оценка</b><br>Лекции, практика и обратная связь вместе · ${qp.n} ${plural(qp.n,'оценка','оценки','оценок')}`)}">
         <div class="t">Средняя оценка</div><div class="v">${fmtAvg(qp.avg)}</div></div>
@@ -857,13 +920,13 @@ function tabSummary(){
         <div class="t">Доля оценок 4–5</div><div class="v">${csat == null ? '—' : csat + '%'}</div></div>
     </div>
     <div class="dash">
-      <div class="dp a-freq"><h3>Частота применения навыков с обучения</h3>
-        <div class="cols">${fc.map((c, k) => `<div class="col" data-tip="${esc(`<b>${esc(freq.o[k])}</b><br>${c} ${plural(c,'человек','человека','человек')} · ${Math.round(c / n * 100)}%`)}">
+      <div class="dp a-freq"><h3>${freq.q.replace(/\?$/, '') === DEFAULT_SURVEY.sections[0].items[0].q.replace(/\?$/, '') ? 'Частота применения навыков с обучения' : esc(freq.q)}</h3>
+        <div class="cols">${fc.map((c, k) => `<div class="col" data-tip="${esc(`<b>${esc(fo[k])}</b><br>${c} ${plural(c,'человек','человека','человек')} · ${Math.round(c / n * 100)}%`)}">
           <b>${c}</b><i style="height:${c / fmax * 82}%"></i></div>`).join('')}</div>
-        <div class="clabels">${freq.o.map(o => `<span>${esc(o)}</span>`).join('')}</div></div>
-      ${ratingPanel(topics, rows, 'a-topics', 'Оценка по темам учебной части')}
+        <div class="clabels">${fo.map(o => `<span>${esc(o)}</span>`).join('')}</div></div>
+      ${ratingPanel(topics, rows, 'a-topics', topics.label === 'Учебная часть' ? 'Оценка по темам учебной части' : 'Оценка: ' + esc(topics.label))}
       <div class="dp a-act"><h3>Оценка по видам деятельности</h3><div class="body">${act}</div></div>
-      ${ratingPanel(tasks, rows, 'a-tasks', 'Оценка по темам творческих заданий')}
+      ${ratingPanel(tasks, rows, 'a-tasks', tasks.label === 'Творческие задания' ? 'Оценка по темам творческих заданий' : 'Оценка: ' + esc(tasks.label))}
       <div class="dp a-comm"><h3>Комментарии</h3><div class="body">${comments}</div></div>
     </div>`;
   fitDash();
@@ -897,7 +960,7 @@ function tabFeedback(){
 function tabList(){
   const rows = filtered().slice().sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
   const qual = ITEMS.find(it => it.id === 'quality'), freq = ITEMS.find(it => it.id === 'freq');
-  const qa = r => { const v = qual.rows.map(x => +r.f[`${qual.prefix}: ${x}`]).filter(x => x >= 1); return v.length ? v.reduce((a, b) => a + b) / v.length : null; };
+  const qa = r => { const v = rowsOf(qual, [r]).map(x => +r.f[`${qual.prefix}: ${x}`]).filter(x => x >= 1); return v.length ? v.reduce((a, b) => a + b) / v.length : null; };
   $('#tab').innerHTML = `<div class="panel"><h3><span>Анкеты: ${rows.length}</span></h3>
     ${rows.length ? `<table class="tbl desk"><thead><tr><th>Дата</th><th>Участник</th><th>Группа</th><th>Тренер</th><th>Применение</th><th>Оценка обучения</th></tr></thead>
       <tbody>${rows.map(r => `<tr data-id="${esc(r.id)}"><td>${fmtDate(r.finishedAt)}</td><td><b>${esc(r.surname)} ${esc(r.name)}</b></td>
@@ -914,9 +977,145 @@ function openDetail(id){
   openModal(`<p class="kick" style="margin:0 0 6px">Группа ${esc(r.group)}${r.f['Тренер'] ? ' · тренер ' + esc(r.f['Тренер']) : ''} · ${fmtDate(r.finishedAt)}</p>
     <h2 style="font-size:28px;margin-right:50px">${esc(r.surname)} ${esc(r.name)}</h2>
     <dl class="det">${ITEMS.map(it => it.type === 'scale'
-      ? `<dt>${esc(it.q)}</dt><dd>${it.rows.map(x => { const v = r.f[`${it.prefix}: ${x}`];
+      ? `<dt>${esc(it.q)}</dt><dd>${rowsOf(it, [r]).map(x => { const v = r.f[`${it.prefix}: ${x}`];
           return `<div class="srate"><span>${esc(x)}</span><b>${v === '' || v == null ? '—' : esc(v)}</b></div>`; }).join('')}</dd>`
       : `<dt>${esc(it.q)}</dt><dd>${esc(r.f[it.col] || '—')}</dd>`).join('')}</dl>`);
+}
+
+/* --- вкладка «Вопросы»: редактор анкеты --- */
+const TYPE_NAME = {choice: 'Один вариант ответа', text: 'Свободный ответ', scale: 'Оценки от 1 до 5'};
+const lines = v => (Array.isArray(v) ? v : String(v || '').split('\n')).map(x => String(x).replace(/\s+/g, ' ').trim()).filter(Boolean);
+function edItem(it, si, ii, n){
+  const core = !!CORE[it.id], ta = (f, v, rows = 3) => `<textarea class="ctl" data-f="${f}" rows="${rows}">${esc(v)}</textarea>`;
+  const inp = (f, v, ro) => `<input class="ctl" data-f="${f}" value="${esc(v || '')}" ${ro ? 'readonly title="Основной вопрос: название столбца менять нельзя"' : ''}>`;
+  return `<div class="edit" data-si="${si}" data-ii="${ii}">
+    <div class="edhead"><b>${TYPE_NAME[it.type]}</b>${core ? '<span class="tag gr">на дашборде</span>' : ''}
+      <span class="mv"><button class="btn ghost sm" data-act="itUp" ${ii === 0 ? 'disabled' : ''} title="Выше">↑</button>
+        <button class="btn ghost sm" data-act="itDown" ${ii === n - 1 ? 'disabled' : ''} title="Ниже">↓</button>
+        <button class="btn ghost sm" data-act="itDel" ${core ? 'disabled title="Основной вопрос дашборда удалить нельзя"' : 'title="Удалить вопрос"'}>✕</button></span></div>
+    <label class="fld"><span>Текст вопроса</span>${ta('q', it.q, 2)}</label>
+    ${it.type === 'choice' ? `<label class="fld"><span>Варианты ответа — по одному на строку</span>${ta('o', (it.o || []).join('\n'), Math.max(3, (it.o || []).length))}</label>` : ''}
+    ${it.type === 'scale' ? `<label class="fld"><span>Что оценивают — по одному пункту на строку${it.id === 'quality' ? ' (для ровной сетки дашборда — 3 пункта)' : ''}</span>${ta('rows', (it.rows || []).join('\n'), Math.max(3, (it.rows || []).length))}</label>
+      <div class="ed2"><label class="fld"><span>Название в дашборде</span>${inp('label', it.label)}</label>
+        <label class="fld"><span>Начало названий столбцов в таблице</span>${inp('prefix', it.prefix, core)}</label></div>`
+      : `<div class="ed2"><label class="fld"><span>Название столбца в таблице</span>${inp('col', it.col, core)}</label>
+        <label class="chk" style="align-self:end"><input type="checkbox" data-f="required" ${it.required ? 'checked' : ''}> Обязательный вопрос</label></div>`}
+  </div>`;
+}
+function tabEditor(){
+  if (!T.draft) T.draft = clone(SURVEY);
+  const D = T.draft;
+  $('#tab').innerHTML = `
+    <div class="panel ed">
+      <h3><span>Вопросы анкеты</span><span class="acts" style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="state" id="edState">${T.dirty ? 'Есть несохранённые изменения' : 'Сохранено'}</span>
+        <button class="btn sm" id="edSave">Сохранить для участников</button>
+        <button class="btn ghost sm" id="edUndo" ${T.dirty ? '' : 'disabled'}>Отменить изменения</button>
+        <a class="btn ghost sm" href="./" target="_blank" rel="noopener">Открыть анкету ↗</a></span></h3>
+      <p class="sub">Изменения увидят все, кто откроет анкету после сохранения. Уже отправленные ответы не меняются.
+        Если переименовать пункт или вариант, в таблице появится новый столбец, а прежние ответы останутся под старым названием.</p>
+      <p class="err" id="edErr" role="alert"></p>
+      <div class="ed2">
+        <label class="fld"><span>Заголовок (текст в «кавычках» выделяется цветом)</span><input class="ctl" data-k="title" value="${esc(D.title)}"></label>
+        <label class="fld"><span>Подпись под формой</span><input class="ctl" data-k="sign" value="${esc(D.sign)}"></label>
+      </div>
+      <div class="ed2">
+        <label class="fld"><span>Вступление</span><textarea class="ctl" data-k="intro" rows="4">${esc(D.intro)}</textarea></label>
+        <label class="fld"><span>Тренеры — по одному на строку</span><textarea class="ctl" data-k="trainers" rows="4">${esc((D.trainers || []).join('\n'))}</textarea></label>
+      </div>
+    </div>
+    ${D.sections.map((sec, si) => { const hasCore = sec.items.some(it => CORE[it.id]);
+      return `<div class="panel ed" data-si="${si}">
+        <div class="edsec"><label class="fld" style="flex:1;margin:0"><span>Раздел ${si + 1} из ${D.sections.length}</span><input class="ctl" data-st="${si}" value="${esc(sec.title)}"></label>
+          <span class="mv"><button class="btn ghost sm" data-act="secUp" ${si === 0 ? 'disabled' : ''} title="Выше">↑</button>
+            <button class="btn ghost sm" data-act="secDown" ${si === D.sections.length - 1 ? 'disabled' : ''} title="Ниже">↓</button>
+            <button class="btn ghost sm" data-act="secDel" ${hasCore ? 'disabled title="В разделе есть основные вопросы дашборда"' : 'title="Удалить раздел"'}>✕</button></span></div>
+        ${sec.items.map((it, ii) => edItem(it, si, ii, sec.items.length)).join('')}
+        <div class="row" style="margin-top:12px"><select class="ctl" data-addtype style="max-width:240px">
+          <option value="scale">Оценки от 1 до 5</option><option value="text">Свободный ответ</option><option value="choice">Один вариант ответа</option></select>
+          <button class="btn ghost sm" data-act="itAdd">+ Добавить вопрос</button></div>
+      </div>`; }).join('')}
+    <div class="row" style="margin-bottom:16px"><button class="btn ghost sm" id="edAddSec">+ Добавить раздел</button>
+      <span class="grow"></span><button class="btn ghost sm" id="edDefault">Вернуть исходные вопросы</button></div>`;
+
+  const dirty = () => { T.dirty = true; $('#edState').textContent = 'Есть несохранённые изменения'; $('#edUndo').disabled = false; };
+  const itemOf = el => { const e = el.closest('.edit'); return e ? D.sections[+e.dataset.si].items[+e.dataset.ii] : null; };
+  $('#tab').oninput = $('#tab').onchange = e => {
+    const el = e.target;
+    if (el.dataset.k){ D[el.dataset.k] = el.dataset.k === 'trainers' ? el.value.split('\n') : el.value; return dirty(); }
+    if (el.dataset.st !== undefined){ D.sections[+el.dataset.st].title = el.value; return dirty(); }
+    const it = itemOf(el); if (!it || !el.dataset.f) return;
+    const f = el.dataset.f;
+    if (f === 'required') it.required = el.checked;
+    else if (f === 'o' || f === 'rows') it[f] = el.value.split('\n');
+    else it[f] = el.value;
+    dirty();
+  };
+  $('#tab').onclick = e => {
+    const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+    const sEl = b.closest('[data-si]'), si = sEl ? +sEl.dataset.si : -1, sec = D.sections[si];
+    const ie = b.closest('.edit'), ii = ie ? +ie.dataset.ii : -1;
+    const swap = (arr, i, j) => { [arr[i], arr[j]] = [arr[j], arr[i]]; };
+    const act = b.dataset.act;
+    if (act === 'itUp') swap(sec.items, ii, ii - 1);
+    else if (act === 'itDown') swap(sec.items, ii, ii + 1);
+    else if (act === 'itDel'){ if (!confirm('Удалить этот вопрос из анкеты? Уже собранные ответы останутся в таблице.')) return; sec.items.splice(ii, 1); }
+    else if (act === 'secUp') swap(D.sections, si, si - 1);
+    else if (act === 'secDown') swap(D.sections, si, si + 1);
+    else if (act === 'secDel'){ if (!confirm('Удалить раздел вместе с его вопросами?')) return; D.sections.splice(si, 1); }
+    else if (act === 'itAdd'){
+      const type = $('[data-addtype]', sEl).value, id = 'q' + Date.now().toString(36);
+      sec.items.push(type === 'scale' ? {id, type, q: 'Оцените, пожалуйста…', rows: ['Пункт 1', 'Пункт 2'], prefix: 'Оценка ' + (ITEMS.length + 1), label: 'Новый блок оценок'}
+        : type === 'choice' ? {id, type, q: 'Новый вопрос', o: ['Вариант 1', 'Вариант 2'], col: 'Вопрос ' + (ITEMS.length + 1), required: false}
+        : {id, type, q: 'Новый вопрос', col: 'Вопрос ' + (ITEMS.length + 1), required: false});
+    }
+    T.dirty = true; tabEditor();
+  };
+  $('#edAddSec').onclick = () => { D.sections.push({title: 'Новый раздел', items: [{id: 'q' + Date.now().toString(36), type: 'text', q: 'Новый вопрос', col: 'Вопрос ' + (ITEMS.length + 1), required: false}]});
+    T.dirty = true; tabEditor(); };
+  $('#edDefault').onclick = () => { if (!confirm('Вернуть исходный набор вопросов? Не забудьте потом нажать «Сохранить для участников».')) return;
+    T.draft = clone(DEFAULT_SURVEY); T.dirty = true; tabEditor(); };
+  $('#edUndo').onclick = () => { T.draft = null; T.dirty = false; tabEditor(); };
+  $('#edSave').onclick = saveSurvey;
+}
+function cleanSurvey(D){
+  const c = clone(D), errs = [];
+  c.title = String(c.title || '').trim(); c.intro = String(c.intro || '').trim(); c.sign = String(c.sign || '').trim();
+  c.trainers = [...new Set(lines(c.trainers))];
+  if (!c.title) errs.push('Заполните заголовок анкеты.');
+  if (!c.trainers.length) errs.push('Укажите хотя бы одного тренера.');
+  c.sections = c.sections.filter(s => s.items.length);
+  const heads = new Set(['ID', 'Дата', 'Фамилия', 'Имя', 'Группа', 'Тренер']);
+  const addHead = (h, where) => { if (heads.has(h)) errs.push(`Название столбца «${h}» повторяется (${where}). Сделайте его уникальным.`); heads.add(h); };
+  c.sections.forEach((s, si) => {
+    s.title = String(s.title || '').trim(); if (!s.title) errs.push(`У раздела ${si + 1} нет названия.`);
+    s.items.forEach(it => {
+      it.q = String(it.q || '').trim(); const where = `«${(it.q || 'без текста').slice(0, 40)}»`;
+      if (!it.q) errs.push(`В разделе «${s.title}» есть вопрос без текста.`);
+      if (it.type === 'scale'){
+        it.rows = [...new Set(lines(it.rows))]; it.prefix = String(it.prefix || '').trim(); it.label = String(it.label || '').trim() || it.prefix;
+        if (!it.rows.length) errs.push(`В вопросе ${where} нет пунктов для оценки.`);
+        if (!it.prefix) errs.push(`В вопросе ${where} не задано начало названий столбцов.`);
+        it.rows.forEach(r => addHead(`${it.prefix}: ${r}`, where));
+      } else {
+        it.col = String(it.col || '').trim(); it.required = !!it.required;
+        if (!it.col) errs.push(`В вопросе ${where} не задано название столбца.`); else addHead(it.col, where);
+        if (it.type === 'choice'){ it.o = [...new Set(lines(it.o))]; if (it.o.length < 2) errs.push(`В вопросе ${where} нужно минимум два варианта ответа.`); }
+      }
+    });
+  });
+  return {c, errs};
+}
+async function saveSurvey(){
+  const {c, errs} = cleanSurvey(T.draft);
+  if (errs.length){ $('#edErr').innerHTML = errs.map(esc).join('<br>'); $('#edErr').scrollIntoView({behavior: 'smooth', block: 'center'}); return; }
+  const b = $('#edSave'); b.disabled = true; b.textContent = 'Сохраняем…';
+  try {
+    const r = await api({action: 'survey_config_set', password: T.pwd, config: c});
+    if (!r || !r.ok) throw new Error(r && r.error === 'unknown_action' ? 'Скрипт Google Таблицы ещё не обновлён — вопросы пока нельзя сохранить.' : (r && r.error) || 'ошибка');
+    applySurvey(c); ls.set(K.cfg, c); T.draft = null; T.dirty = false;
+    renderFilters(); tabEditor(); toast('Вопросы сохранены — участники увидят их при следующем открытии анкеты');
+  } catch(e){ b.disabled = false; b.textContent = 'Сохранить для участников'; $('#edErr').textContent = 'Не удалось сохранить: ' + e.message; }
 }
 
 /* --- Excel --- */
@@ -932,14 +1131,17 @@ async function exportXlsx(rows){
   const sheet = (aoa, widths) => { const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = widths.map(w => ({wch: w}));
     ws['!autofilter'] = {ref: XLSX.utils.encode_range({s: {r: 0, c: 0}, e: {r: aoa.length - 1, c: aoa[0].length - 1}})}; return ws; };
   const sorted = rows.slice().sort((a, b) => a.finishedAt.localeCompare(b.finishedAt));
-  const answers = [['Дата', 'Фамилия', 'Имя', 'Группа', 'Тренер', ...COLS.map(c => c.h)]];
+  const heads = COLS.map(c => c.h);
+  for (const r of sorted) for (const h in r.f) if (h !== 'Тренер' && !heads.includes(h) && r.f[h] !== '' && r.f[h] != null) heads.push(h);
+  const isNum = h => COLS.some(c => c.h === h && c.it.type === 'scale') || /: /.test(h);
+  const answers = [['Дата', 'Фамилия', 'Имя', 'Группа', 'Тренер', ...heads]];
   for (const r of sorted) answers.push([{t: 'n', v: xlDate(r.finishedAt), z: 'dd.mm.yyyy hh:mm'}, r.surname, r.name,
     /^\d+$/.test(r.group) ? +r.group : r.group, r.f['Тренер'] || '',
-    ...COLS.map(c => { const v = r.f[c.h]; return c.it.type === 'scale' && v !== '' && v != null ? +v : (v ?? ''); })]);
+    ...heads.map(h => { const v = r.f[h]; return isNum(h) && v !== '' && v != null && !isNaN(+v) ? +v : (v ?? ''); })]);
   const groups = [...new Set(sorted.map(r => r.group))].sort((a, b) => a.localeCompare(b, 'ru', {numeric: true}));
   const trs = [...new Set(sorted.map(r => r.f['Тренер']).filter(Boolean))];
   const scores = [['Раздел', 'Пункт', 'Средняя', 'Оценок', '1', '2', '3', '4', '5', ...groups.map(g => 'Группа ' + g), ...trs]];
-  for (const c of COLS.filter(c => c.it.type === 'scale')){
+  for (const c of ITEMS.filter(it => it.type === 'scale').flatMap(it => rowsOf(it, sorted).map(r => ({it, row: r, h: `${it.prefix}: ${r}`})))){
     const st = stat(sorted, c.h);
     scores.push([c.it.prefix, c.row, st.avg == null ? '' : {t: 'n', v: Math.round(st.avg * 100) / 100, z: '0.00'}, st.n, ...st.d,
       ...groups.map(g => { const s2 = stat(sorted.filter(r => r.group === g), c.h); return s2.avg == null ? '' : {t: 'n', v: Math.round(s2.avg * 100) / 100, z: '0.00'}; }),
@@ -947,9 +1149,9 @@ async function exportXlsx(rows){
   }
   const freq = ITEMS.find(it => it.id === 'freq');
   const fr = [['Как часто будет применять', 'Ответов', 'Доля, %']];
-  freq.o.forEach(o => { const c = sorted.filter(r => r.f[freq.col] === o).length; fr.push([o, c, sorted.length ? Math.round(c / sorted.length * 100) : 0]); });
+  [...new Set([...freq.o, ...sorted.map(r => r.f[freq.col]).filter(Boolean)])].forEach(o => { const c = sorted.filter(r => r.f[freq.col] === o).length; fr.push([o, c, sorted.length ? Math.round(c / sorted.length * 100) : 0]); });
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, sheet(answers, [17, 16, 14, 9, 18, ...COLS.map(c => c.it.type === 'scale' ? 12 : 40)]), 'Ответы');
+  XLSX.utils.book_append_sheet(wb, sheet(answers, [17, 16, 14, 9, 18, ...heads.map(h => isNum(h) ? 12 : 40)]), 'Ответы');
   XLSX.utils.book_append_sheet(wb, sheet(scores, [10, 36, 9, 8, 5, 5, 5, 5, 5, ...groups.map(() => 11), ...trs.map(() => 17)]), 'Оценки');
   XLSX.utils.book_append_sheet(wb, sheet(fr, [30, 10, 10]), 'Применение');
   XLSX.writeFile(wb, `Анкета_${T.f.group ? 'группа_' + T.f.group + '_' : ''}${T.f.trainer ? T.f.trainer.replace(/\s+/g, '_') + '_' : ''}${dayKey(new Date())}.xlsx`);
@@ -1003,7 +1205,7 @@ function seedDemo(){
     for (const it of ITEMS.filter(it => it.type === 'scale')){
       A[it.id] = {}; it.rows.forEach(r => { if (Math.random() < .93) A[it.id][r] = Math.max(1, Math.min(5, Math.round(bias + Math.random() * 1.6 - .8))); }); }
     db.push({id: uid(), surname: s, name: n, group: g, finishedAt: new Date(now - (g === '16' ? 1 : 8) * 864e5 - i * 4e5).toISOString(),
-      f: Object.fromEntries([['Тренер', CONFIG.TRAINERS[i % CONFIG.TRAINERS.length]], ...toFields(A)])});
+      f: Object.fromEntries([['Тренер', SURVEY.trainers[i % SURVEY.trainers.length]], ...toFields(A)])});
   });
   ls.set(K.demo, db);
 }
@@ -1017,6 +1219,8 @@ async function boot(){
     $('#demo').hidden = false;
     $('#demo').innerHTML = '<b>Демо-режим.</b> Google Таблица не подключена — ответы сохраняются только в этом браузере.';
   }
+  $('#app').innerHTML = '<div class="empty">Загружаем анкету…</div>';
+  await loadSurvey();
   if (p.has('trainer') || ss.get(K.trainer, null)){
     T.pwd = ss.get(K.trainer, null);
     if (T.pwd){
@@ -1029,7 +1233,7 @@ async function boot(){
   }
   if (ls.get(K.outbox, []).length) flushOutbox();
   if (S && S.done) return showThanks();
-  if (S && S.user) return showSection();
+  if (S && S.user){ S.step = Math.min(S.step || 0, SURVEY.sections.length - 1); return showSection(); }
   showLogin(normGroup(p.get('group') || ''));
 }
 document.addEventListener('DOMContentLoaded', boot);
