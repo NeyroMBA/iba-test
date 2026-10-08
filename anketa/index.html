@@ -1074,7 +1074,6 @@ const TYPE_NAME = {choice: 'Один вариант ответа', text: 'Сво
 const lines = v => (Array.isArray(v) ? v : String(v || '').split('\n')).map(x => String(x).replace(/\s+/g, ' ').trim()).filter(Boolean);
 function edItem(it, si, ii, n){
   const core = !!CORE[it.id], ta = (f, v, rows = 3) => `<textarea class="ctl" data-f="${f}" rows="${rows}">${esc(v)}</textarea>`;
-  const inp = (f, v, ro) => `<input class="ctl" data-f="${f}" value="${esc(v || '')}" ${ro ? 'readonly title="Основной вопрос: название столбца менять нельзя"' : ''}>`;
   return `<div class="edit" data-si="${si}" data-ii="${ii}">
     <div class="edhead"><b>${TYPE_NAME[it.type]}</b>${core ? '<span class="tag gr">на дашборде</span>' : ''}
       <span class="mv"><button class="btn ghost sm" data-act="itUp" ${ii === 0 ? 'disabled' : ''} title="Выше">↑</button>
@@ -1082,11 +1081,8 @@ function edItem(it, si, ii, n){
         <button class="btn ghost sm" data-act="itDel" ${core ? 'disabled title="Основной вопрос дашборда удалить нельзя"' : 'title="Удалить вопрос"'}>✕</button></span></div>
     <label class="fld"><span>Текст вопроса</span>${ta('q', it.q, 2)}</label>
     ${it.type === 'choice' ? `<label class="fld"><span>Варианты ответа — по одному на строку</span>${ta('o', (it.o || []).join('\n'), Math.max(3, (it.o || []).length))}</label>` : ''}
-    ${it.type === 'scale' ? `<label class="fld"><span>Что оценивают — по одному пункту на строку${it.id === 'quality' ? ' (для ровной сетки дашборда — 3 пункта)' : ''}</span>${ta('rows', (it.rows || []).join('\n'), Math.max(3, (it.rows || []).length))}</label>
-      <div class="ed2"><label class="fld"><span>Название в дашборде</span>${inp('label', it.label)}</label>
-        <label class="fld"><span>Начало названий столбцов в таблице</span>${inp('prefix', it.prefix, core)}</label></div>`
-      : `<div class="ed2"><label class="fld"><span>Название столбца в таблице</span>${inp('col', it.col, core)}</label>
-        <label class="chk" style="align-self:end"><input type="checkbox" data-f="required" ${it.required ? 'checked' : ''}> Обязательный вопрос</label></div>`}
+    ${it.type === 'scale' ? `<label class="fld"><span>Что оценивают — по одному пункту на строку${it.id === 'quality' ? ' (для ровной сетки дашборда — 3 пункта)' : ''}</span>${ta('rows', (it.rows || []).join('\n'), Math.max(3, (it.rows || []).length))}</label>`
+      : `<label class="chk" style="margin:10px 0 0"><input type="checkbox" data-f="required" ${it.required ? 'checked' : ''}> Обязательный вопрос</label>`}
   </div>`;
 }
 function tabEditor(){
@@ -1152,13 +1148,13 @@ function tabEditor(){
     else if (act === 'secDel'){ if (!confirm('Удалить раздел вместе с его вопросами?')) return; D.sections.splice(si, 1); }
     else if (act === 'itAdd'){
       const type = $('[data-addtype]', sEl).value, id = 'q' + Date.now().toString(36);
-      sec.items.push(type === 'scale' ? {id, type, q: 'Оцените, пожалуйста…', rows: ['Пункт 1', 'Пункт 2'], prefix: 'Оценка ' + (ITEMS.length + 1), label: 'Новый блок оценок'}
-        : type === 'choice' ? {id, type, q: 'Новый вопрос', o: ['Вариант 1', 'Вариант 2'], col: 'Вопрос ' + (ITEMS.length + 1), required: false}
-        : {id, type, q: 'Новый вопрос', col: 'Вопрос ' + (ITEMS.length + 1), required: false});
+      sec.items.push(type === 'scale' ? {id, type, q: 'Оцените, пожалуйста…', rows: ['Пункт 1', 'Пункт 2']}
+        : type === 'choice' ? {id, type, q: 'Новый вопрос', o: ['Вариант 1', 'Вариант 2'], required: false}
+        : {id, type, q: 'Новый вопрос', required: false});
     }
     T.dirty = true; tabEditor();
   };
-  $('#edAddSec').onclick = () => { D.sections.push({title: 'Новый раздел', items: [{id: 'q' + Date.now().toString(36), type: 'text', q: 'Новый вопрос', col: 'Вопрос ' + (ITEMS.length + 1), required: false}]});
+  $('#edAddSec').onclick = () => { D.sections.push({title: 'Новый раздел', items: [{id: 'q' + Date.now().toString(36), type: 'text', q: 'Новый вопрос', required: false}]});
     T.dirty = true; tabEditor(); };
   $('#edDefault').onclick = () => { if (!confirm('Вернуть исходный набор вопросов? Не забудьте потом нажать «Сохранить для участников».')) return;
     T.draft = clone(DEFAULT_SURVEY); T.dirty = true; tabEditor(); };
@@ -1172,21 +1168,23 @@ function cleanSurvey(D){
   if (!c.title) errs.push('Заполните заголовок анкеты.');
   if (!c.trainers.length) errs.push('Укажите хотя бы одного тренера.');
   c.sections = c.sections.filter(s => s.items.length);
-  const heads = new Set(['ID', 'Дата', 'Фамилия', 'Имя', 'Группа', 'Тренер']);
-  const addHead = (h, where) => { if (heads.has(h)) errs.push(`Название столбца «${h}» повторяется (${where}). Сделайте его уникальным.`); heads.add(h); };
+  // имена столбцов: у сохранённых вопросов — прежние, у новых — из текста вопроса (у оценок — из названия раздела)
+  const names = new Set(['ID', 'Дата', 'Фамилия', 'Имя', 'Группа', 'Тренер']);
+  c.sections.forEach(s => s.items.forEach(it => { const n = String((it.type === 'scale' ? it.prefix : it.col) || '').trim(); if (n) names.add(n); }));
+  const fresh = base => { base = String(base || 'Вопрос').replace(/\s+/g, ' ').replace(/[?!.…:;,]+$/, '').trim().slice(0, 60) || 'Вопрос';
+    let n = base, k = 2; while (names.has(n)) n = `${base} (${k++})`; names.add(n); return n; };
   c.sections.forEach((s, si) => {
     s.title = String(s.title || '').trim(); if (!s.title) errs.push(`У раздела ${si + 1} нет названия.`);
     s.items.forEach(it => {
       it.q = String(it.q || '').trim(); const where = `«${(it.q || 'без текста').slice(0, 40)}»`;
       if (!it.q) errs.push(`В разделе «${s.title}» есть вопрос без текста.`);
       if (it.type === 'scale'){
-        it.rows = [...new Set(lines(it.rows))]; it.prefix = String(it.prefix || '').trim(); it.label = String(it.label || '').trim() || it.prefix;
+        it.rows = [...new Set(lines(it.rows))];
+        it.prefix = String(it.prefix || '').trim() || fresh(s.title);
+        it.label = String(it.label || '').trim() || it.prefix;
         if (!it.rows.length) errs.push(`В вопросе ${where} нет пунктов для оценки.`);
-        if (!it.prefix) errs.push(`В вопросе ${where} не задано начало названий столбцов.`);
-        it.rows.forEach(r => addHead(`${it.prefix}: ${r}`, where));
       } else {
-        it.col = String(it.col || '').trim(); it.required = !!it.required;
-        if (!it.col) errs.push(`В вопросе ${where} не задано название столбца.`); else addHead(it.col, where);
+        it.col = String(it.col || '').trim() || fresh(it.q); it.required = !!it.required;
         if (it.type === 'choice'){ it.o = [...new Set(lines(it.o))]; if (it.o.length < 2) errs.push(`В вопросе ${where} нужно минимум два варианта ответа.`); }
       }
     });
