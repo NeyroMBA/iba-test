@@ -1,0 +1,5 @@
+# Публикуется только сам тест
+/*
+!/index.html
+!/.nojekyll
+!/.gitignore
