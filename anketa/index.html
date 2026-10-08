@@ -599,6 +599,7 @@ function demoApi(p){
     ls.set(K.demoAcc, acc); return {ok: true};
   }
   if (p.action === 'account_delete'){ ls.set(K.demoAcc, acc.filter(x => x.login !== p.target)); return {ok: true}; }
+  if (p.action === 'account_reveal'){ const a = acc.find(x => x.login === p.target); return a ? {ok: true, login: a.login, name: a.name, password: a.password} : {ok: false, error: 'not_found'}; }
   return {ok: false, error: 'unknown_action'};
 }
 
@@ -1305,12 +1306,13 @@ const genPassword = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s =
   const r = crypto.getRandomValues(new Uint32Array(10)); for (const x of r) s += a[x % a.length]; return s; };
 const ACC_ERR = {bad_login: 'Логин — латинские буквы, цифры, точка, дефис или подчёркивание, от 3 до 30 символов (не admin).',
   bad_name: 'Выберите тренера.', short_password: 'Пароль — не короче 6 символов.', name_taken: 'У этого тренера уже есть вход.',
-  forbidden: 'Недостаточно прав.', unknown_action: 'Скрипт Google Таблицы ещё не обновлён — обновите его, чтобы добавлять тренеров.'};
+  forbidden: 'Недостаточно прав.', unknown_action: 'Скрипт Google Таблицы ещё не обновлён — обновите его.',
+  not_stored: 'Этот пароль создан до обновления (или сменился пароль администратора) — посмотреть его нельзя. Нажмите «Новый пароль».'};
 function showCreds(name, login, pw){
   const link = baseUrl() + '?trainer';
   const text = `Панель тренера: ${link}\nЛогин: ${login}\nПароль: ${pw}`;
   openModal(`<h2 style="margin-right:50px">Вход для тренера ${esc(name)}</h2>
-    <p class="small" style="margin:6px 0 12px">Передайте тренеру эти данные. Пароль показывается один раз — в таблице он хранится в зашифрованном виде.</p>
+    <p class="small" style="margin:6px 0 12px">Передайте тренеру эти данные. Пароль можно посмотреть здесь в любой момент — в таблице он хранится в зашифрованном виде.</p>
     <div class="linkline" style="white-space:pre-wrap">${esc(text)}</div>
     <div class="row"><button class="btn" id="ccopy">Скопировать</button></div>`);
   $('#ccopy').onclick = async () => { try { await navigator.clipboard.writeText(text); toast('Скопировано'); } catch(e){ prompt('Скопируйте:', text); } };
@@ -1330,7 +1332,8 @@ async function tabAccess(){
       <table class="tbl"><thead><tr><th>Тренер</th><th>Логин</th><th></th></tr></thead><tbody>
         <tr><td><b>${esc(adminName())}</b> <span class="tag gr">администратор — вы</span></td><td>admin</td><td></td></tr>
         ${list.map(a => `<tr data-login="${esc(a.login)}" data-name="${esc(a.name)}"><td><b>${esc(a.name)}</b></td><td>${esc(a.login)}</td>
-          <td style="text-align:right;white-space:nowrap"><button class="obtn" data-act="accPw">Новый пароль</button>
+          <td style="text-align:right;white-space:nowrap"><button class="obtn" data-act="accShow">Показать пароль</button>
+            <button class="obtn" data-act="accPw">Новый пароль</button>
             <button class="obtn" data-act="accDel">Удалить</button></td></tr>`).join('')}
       </tbody></table>
       <h3 style="margin-top:20px">Добавить тренера</h3>
@@ -1356,6 +1359,12 @@ async function tabAccess(){
   $('#tab').onclick = async e => {
     const b = e.target.closest('[data-act]'); if (!b) return;
     const tr = b.closest('tr'), login = tr.dataset.login, name = tr.dataset.name;
+    if (b.dataset.act === 'accShow'){
+      b.disabled = true;
+      const res = await api({action: 'account_reveal', ...authArgs(), target: login}).catch(() => ({ok: false, error: 'network'}));
+      b.disabled = false;
+      if (res.ok) showCreds(name, res.login, res.password); else toast(ACC_ERR[res.error] || 'Не удалось получить пароль. Проверьте интернет.');
+    }
     if (b.dataset.act === 'accPw'){
       if (!confirm(`Сменить пароль тренеру ${name}? Старый пароль перестанет работать.`)) return;
       const pw = genPassword();
