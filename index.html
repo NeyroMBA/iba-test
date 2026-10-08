@@ -280,7 +280,7 @@ const CONFIG = {
   // Пока пусто — тест работает в демо-режиме: результаты хранятся только в этом браузере.
   API_URL: 'https://script.google.com/macros/s/AKfycbxckKIQZr11lHgEvjKf3xImZSsOUjSytViYQEu4Vpw2Azg-o3Lx-Ruckd9yEOsKc_GvzQ/exec',
   TITLE: 'Визуализация данных и информационные панели <em>Dashboard</em>',
-  PASS_PCT: 70,            // проходной балл, %
+  PASS_PCT: 60,            // проходной балл, %: сдал — 60% правильных ответов и больше
   MINUTES: 10,             // ориентировочное время, показывается на стартовом экране
   ALLOW_RETAKE: false,     // false — одна попытка: повторно пройти под тем же именем и группой нельзя
   SHOW_ANSWERS: true,      // показывать участнику правильные ответы в разборе
@@ -695,7 +695,7 @@ async function loadResults(){
     T.rows = (r.rows || []).map(x => ({...x,
       answers: typeof x.answers === 'string' ? JSON.parse(x.answers || '[]') : (x.answers || []),
       score: +x.score, total: +x.total || Q.length, pct: +x.pct, attempt: +x.attempt || 1, durationSec: +x.durationSec || 0,
-      passed: x.passed === true || x.passed === 'true' || x.passed === 'Сдал'}));
+      passed: +x.pct >= CONFIG.PASS_PCT}));   // статус считаем по текущему порогу, в т.ч. для старых записей
     return true;
   } catch(e){ return 'Не удалось загрузить результаты. Проверьте интернет и адрес API.'; }
 }
