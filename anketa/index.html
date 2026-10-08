@@ -419,15 +419,10 @@ function showLogin(prefGroup = ''){
     <section class="intro">
       <h1>${SURVEY.title}</h1>
       <p class="lead">${SURVEY.intro}</p>
-      <ul class="facts">
-        <li><b>${SURVEY.sections.length}</b><span>${plural(SURVEY.sections.length,'раздел','раздела','разделов')}</span></li>
-        <li><b>~${CONFIG.MINUTES}</b><span>минут</span></li>
-      </ul>
     </section>
     <ul class="rules">
-      <li><i>1</i><span>Почти все вопросы — оценки от 1 до 5: достаточно нажать на цифру.</span></li>
-      <li><i>2</i><span>Обязательные вопросы отмечены <b style="color:var(--red)">*</b>, остальные — по желанию.</span></li>
-      <li><i>3</i><span>Можно вернуться назад и поменять ответ, пока анкета не отправлена.</span></li>
+      <li><i>1</i><span>Обязательные вопросы отмечены <b style="color:var(--red)">*</b>, остальные — по желанию.</span></li>
+      <li><i>2</i><span>Можно вернуться назад и поменять ответ, пока анкета не отправлена.</span></li>
     </ul>
     <form class="card login" id="f" novalidate>
       <h2>Представьтесь</h2>
