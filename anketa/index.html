@@ -193,26 +193,27 @@ table.tbl{width:100%;border-collapse:collapse;font-size:16px}
   border-radius:10px;padding:10px 12px;word-break:break-all;margin:10px 0}
 
 /* ---------- дашборд анкеты ---------- */
-.wrap.wide{max-width:1320px}
+.wrap.wide{max-width:1680px}
 :root{--good:#1B8A4C;--mid:#E2C044;--low:#D7263D;--col:#EF8A4C}
 .dtool{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 12px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
-.kp5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:12px}
-.kp5 .kbig .t{min-height:2.6em;display:flex;align-items:center;justify-content:center;line-height:1.25}
-.kbig{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.kbig .t{font-size:17px;font-weight:700;color:#2D2D2D}
-.kbig .v{font-size:48px;font-weight:900;letter-spacing:-.03em;line-height:1.1;margin:6px 0 6px;color:var(--ink)}
+.kp5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.kbig{background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px 14px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.kbig .t{font-size:15px;font-weight:700;color:#2D2D2D;line-height:1.25}
+.kbig .v{font-size:38px;font-weight:900;letter-spacing:-.03em;line-height:1.1;margin:2px 0 0;color:var(--ink)}
 .kbig.sm .t{font-size:14px;font-weight:600;color:var(--muted);order:2}
 .kbig.sm .v{font-size:28px;margin:0 0 4px;order:1}
 .kbig.sm .v.txt{font-size:18px;line-height:1.25}
 .kbig.sm .pill{order:3;margin-top:4px}
 .pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#2D2D2D}
 .pill i{width:10px;height:10px;border-radius:50%;display:inline-block}
-.dash{display:flex;gap:12px;align-items:flex-start}
-.dcol{display:flex;flex-direction:column;gap:12px;min-width:0;flex:1 1 0}
-.dcol.c2{flex-grow:1.25}
-.dp{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;min-width:0}
-.dp h3{font-size:17px;margin:0 0 12px;line-height:1.25}
-.cols{display:flex;align-items:flex-end;gap:10px;height:190px;border-bottom:1px solid var(--line)}
+.dash{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-areas:"freq freq topics topics comm" "act act tasks tasks comm";gap:12px;align-items:stretch}
+.a-freq{grid-area:freq}.a-topics{grid-area:topics}.a-act{grid-area:act}.a-tasks{grid-area:tasks}.a-comm{grid-area:comm}
+.dash .dp{display:flex;flex-direction:column;min-height:0}
+.dash .a-freq .cols{flex:1 1 auto}
+.dash .a-comm .cl ul{max-height:200px}
+.dp{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px;min-width:0}
+.dp h3{font-size:15px;margin:0 0 8px;line-height:1.25;flex:none}
+.cols{display:flex;align-items:flex-end;gap:10px;height:170px;border-bottom:1px solid var(--line)}
 .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;cursor:default}
 .col b{font-size:15px;margin-bottom:4px}
 .col i{display:block;width:72%;max-width:64px;background:var(--col);border-radius:4px 4px 0 0;min-height:2px}
@@ -229,21 +230,61 @@ table.tbl{width:100%;border-collapse:collapse;font-size:16px}
 .rlegend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:12px}
 .rlegend span{display:inline-flex;align-items:center;gap:5px}
 .rlegend i{width:10px;height:10px;border-radius:3px;display:inline-block}
-.cl+.cl{margin-top:16px}
+.cl+.cl{margin-top:10px}
 .cl h4{font-size:15px;margin:0 0 6px;display:flex;justify-content:space-between;gap:8px}
 .cl h4 em{font-style:normal;color:var(--kick);font-weight:600}
 .cl ul{list-style:none;margin:0;padding:0;max-height:200px;overflow:auto;border-top:1px solid var(--line)}
 .cl li{padding:8px 2px;border-bottom:1px solid #EEF0EA;font-size:14px;line-height:1.4;white-space:pre-wrap}
 .cl li span{display:block;font-size:12px;color:var(--kick);margin-top:2px;white-space:normal}
+.wrap.wide{padding-top:12px;padding-bottom:16px}
+.wrap.wide header.top{margin-bottom:10px;padding-bottom:8px}
+.wrap.wide header.top img{height:32px}
+.wrap.wide .thead{margin-bottom:8px}
+.wrap.wide .thead h1{font-size:24px}
+.wrap.wide .tabs{margin-bottom:8px;padding:4px}
+.wrap.wide .tabs button{min-height:34px;padding:5px 14px}
+.wrap.wide .filters{margin-bottom:10px;gap:8px}
+.wrap.wide .filters label>span{font-size:12px;margin-bottom:2px}
+.wrap.wide .filters .ctl{min-height:36px;padding:5px 10px;font-size:15px}
+@media (min-width:1101px){
+  .dash.fit{grid-template-rows:minmax(0,1fr) auto}
+  .dash.fit .dp .body{flex:1 1 auto;min-height:0;overflow:auto}
+  .dash.fit .a-freq .cols{height:auto;min-height:80px}
+  .dash.fit .a-comm .body{display:flex;flex-direction:column;overflow:hidden}
+  .dash.fit .cl{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+  .dash.fit .cl ul{max-height:none;flex:1 1 auto;min-height:0}
+  .dash.fit .rbar{padding:2px 0;font-size:13px}
+  .dash.fit .rbar .tr i{height:16px}
+}
+@media (min-width:1101px) and (max-height:800px){
+  .wrap.wide{padding-top:8px;padding-bottom:12px}
+  .wrap.wide header.top{margin-bottom:6px;padding-bottom:6px}
+  .wrap.wide header.top img{height:26px}
+  .wrap.wide .thead{margin-bottom:6px}
+  .wrap.wide .thead h1{font-size:20px}
+  .wrap.wide .thead .btn.sm{min-height:32px;padding:5px 12px;font-size:14px}
+  .wrap.wide .tabs{margin-bottom:6px;padding:3px}
+  .wrap.wide .tabs button{min-height:30px;padding:3px 12px;font-size:14px}
+  .wrap.wide .filters{margin-bottom:8px}
+  .wrap.wide .filters label>span{font-size:11px;margin-bottom:1px}
+  .wrap.wide .filters .ctl{min-height:32px;padding:3px 8px;font-size:14px}
+  .wrap.wide .kp5{margin-bottom:8px;gap:10px}
+  .wrap.wide .dash{gap:10px}
+  .kbig{padding:6px 12px}
+  .kbig .t{font-size:14px}
+  .kbig .v{font-size:30px}
+  .dp{padding:10px 12px}
+  .dp h3{margin-bottom:6px}
+}
 #tip{position:fixed;z-index:90;background:var(--ink);color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.45;
   pointer-events:none;opacity:0;transition:opacity .1s;max-width:280px;left:0;top:0}
 #tip.on{opacity:1}
-@media (max-width:1100px){.dash{flex-wrap:wrap}.dcol{flex:1 1 calc(50% - 6px)}.dcol.c3{flex-basis:100%}}
+@media (max-width:1100px){.dash{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"freq topics" "act tasks" "comm comm"}}
 @media (max-width:760px){
   .kp5{grid-template-columns:1fr 1fr}
   .kp5>.kbig:first-child{grid-column:1/-1}
   .kbig .v{font-size:36px}
-  .dcol,.dcol.c3{flex-basis:100%}
+  .dash{grid-template-columns:minmax(0,1fr);grid-template-areas:"freq" "topics" "act" "tasks" "comm"}
 }
 @media (max-width:860px){
   .hero{grid-template-columns:1fr;grid-template-areas:'intro' 'form' 'rules';gap:0}
@@ -715,6 +756,7 @@ function showTrainer(){
   $('#app').innerHTML = `
     <div class="thead"><h1>Анкеты участников</h1>
       <div class="acts"><a class="btn ghost sm" href="${CONFIG.TEST_URL}?trainer">Итоговый тест →</a>
+        <button class="btn sm" id="xlsx">⬇ Скачать Excel</button>
         <button class="btn ghost sm" id="reload">↻ Обновить</button><button class="btn ghost sm" id="logout">Выйти</button></div></div>
     ${DEMO ? `<div class="demo">Демо-режим: показаны ответы из этого браузера.
       <button class="btn sm" id="seed">Добавить примеры</button><button class="btn ghost sm" id="wipe">Очистить</button></div>` : ''}
@@ -724,6 +766,7 @@ function showTrainer(){
     </nav>
     <div id="filters"></div><div id="tab"></div>`;
   $$('.tabs button').forEach(b => b.onclick = () => { T.tab = b.dataset.t; renderTab(); });
+  $('#xlsx').onclick = () => { const rows = filtered(); if (!rows.length) return toast('Нет анкет для выгрузки'); exportXlsx(rows); };
   $('#reload').onclick = async () => { $('#reload').disabled = true; const r = await loadResults();
     $('#reload').disabled = false; if (r === true){ renderFilters(); renderTab(); toast('Данные обновлены'); } else toast(r); };
   $('#logout').onclick = () => { ss.del(K.trainer); T.pwd = null; T.rows = []; history.replaceState(null, '', location.pathname); boot(); };
@@ -758,7 +801,6 @@ function renderTab(){
 /* --- вкладка «Дашборд» --- */
 const status = v => v == null ? {c: '#D9DCD4', t: 'нет оценок'} : v >= 4.5 ? {c: 'var(--good)', t: 'отлично'}
   : v >= 4 ? {c: 'var(--mid)', t: 'хорошо'} : {c: 'var(--low)', t: 'есть над чем работать'};
-const pill = v => `<span class="pill"><i style="background:${status(v).c}"></i>${status(v).t}</span>`;
 const tipStat = (name, st) => `<b>${esc(name)}</b><br>Средняя: ${fmtAvg(st.avg)} · ${st.n} ${plural(st.n,'оценка','оценки','оценок')}`
   + (st.n ? `<br>${st.d.map((c, k) => `«${k + 1}» — ${c}`).join(', ')}` : '');
 function pooled(rows, it){
@@ -768,12 +810,19 @@ function pooled(rows, it){
 }
 const rbar = (name, st, tip) => `<div class="rbar" data-tip="${esc(tip || tipStat(name, st))}"><span class="n">${esc(name)}</span>
   <span class="tr"><s><i style="width:${st.avg ? st.avg / 5 * 100 : 0}%;background:${status(st.avg).c}"></i></s><b>${fmtAvg(st.avg)}</b></span></div>`;
-const rlegend = `<div class="rlegend"><span><i style="background:var(--good)"></i>4,5–5 отлично</span>
-  <span><i style="background:var(--mid)"></i>4,0–4,4 хорошо</span><span><i style="background:var(--low)"></i>ниже 4,0</span></div>`;
 function ratingPanel(it, rows, area, title){
   const list = it.rows.map(r => ({r, st: stat(rows, `${it.prefix}: ${r}`)})).sort((a, b) => (b.st.avg ?? -1) - (a.st.avg ?? -1));
-  return `<div class="dp ${area}"><h3>${title}</h3>${list.map(x => rbar(x.r, x.st)).join('')}${rlegend}</div>`;
+  return `<div class="dp ${area}"><h3>${title}</h3><div class="body">${list.map(x => rbar(x.r, x.st)).join('')}</div></div>`;
 }
+// дашборд занимает остаток экрана: всё видно без прокрутки страницы, длинные списки прокручиваются внутри
+function fitDash(){
+  const d = $('.dash'); if (!d) return;
+  if (innerWidth <= 1100){ d.classList.remove('fit'); d.style.height = ''; return; }
+  d.classList.add('fit');
+  const top = d.getBoundingClientRect().top + scrollY;
+  d.style.height = Math.max(300, Math.floor(innerHeight - top - 18)) + 'px';
+}
+addEventListener('resize', () => { if (T.tab === 'summary') fitDash(); });
 function tabSummary(){
   const rows = filtered(), n = rows.length;
   const byIt = id => ITEMS.find(it => it.id === id);
@@ -794,27 +843,24 @@ function tabSummary(){
     return rbar(t, st, `<b>${t}</b><br>Средняя по всем пунктам: ${fmtAvg(st.avg)} · ${st.n} ${plural(st.n,'оценка','оценки','оценок')}`);
   }).join('');
   $('#tab').innerHTML = `
-    <div class="dtool"><span>${n} ${plural(n,'анкета','анкеты','анкет')} по выбранным фильтрам · наведите на график, чтобы увидеть детали</span>
-      <button class="btn sm" id="xlsx">⬇ Скачать Excel</button></div>
     <div class="kp5">
-      <div class="kbig"><div class="t">Кол-во слушателей</div><div class="v">${people}</div>
-        <span class="pill">${n} ${plural(n,'анкета','анкеты','анкет')}</span></div>
-      <div class="kbig" data-tip="${esc(`<b>Средняя оценка обучения</b><br>Лекции, практика и обратная связь вместе · ${qp.n} ${plural(qp.n,'оценка','оценки','оценок')}`)}">
-        <div class="t">Средняя оценка обучения</div><div class="v">${fmtAvg(qp.avg)}</div>${pill(qp.avg)}</div>
+      <div class="kbig" data-tip="${esc(`<b>Кол-во слушателей</b><br>${n} ${plural(n,'анкета','анкеты','анкет')} по выбранным фильтрам`)}"><div class="t">Кол-во слушателей</div><div class="v">${people}</div></div>
+      <div class="kbig" data-tip="${esc(`<b>Средняя оценка</b><br>Лекции, практика и обратная связь вместе · ${qp.n} ${plural(qp.n,'оценка','оценки','оценок')}`)}">
+        <div class="t">Средняя оценка</div><div class="v">${fmtAvg(qp.avg)}</div></div>
       ${q.map(x => `<div class="kbig" data-tip="${esc(tipStat(x.r, x.st))}"><div class="t">${esc(shortQ[x.r] || x.r)}</div>
-        <div class="v">${fmtAvg(x.st.avg)}</div>${pill(x.st.avg)}</div>`).join('')}
+        <div class="v">${fmtAvg(x.st.avg)}</div></div>`).join('')}
     </div>
-    <div class="dash"><div class="dcol c1">
+    <div class="dash">
       <div class="dp a-freq"><h3>Частота применения навыков с обучения</h3>
         <div class="cols">${fc.map((c, k) => `<div class="col" data-tip="${esc(`<b>${esc(freq.o[k])}</b><br>${c} ${plural(c,'человек','человека','человек')} · ${Math.round(c / n * 100)}%`)}">
           <b>${c}</b><i style="height:${c / fmax * 82}%"></i></div>`).join('')}</div>
         <div class="clabels">${freq.o.map(o => `<span>${esc(o)}</span>`).join('')}</div></div>
-      <div class="dp a-act"><h3>Оценка по видам деятельности</h3>${act}</div></div>
-      <div class="dcol c2">${ratingPanel(topics, rows, 'a-topics', 'Оценка по темам учебной части')}
-      ${ratingPanel(tasks, rows, 'a-tasks', 'Оценка по темам творческих заданий')}</div>
-      <div class="dcol c3"><div class="dp a-comm"><h3>Комментарии</h3>${comments}</div></div>
+      ${ratingPanel(topics, rows, 'a-topics', 'Оценка по темам учебной части')}
+      <div class="dp a-act"><h3>Оценка по видам деятельности</h3><div class="body">${act}</div></div>
+      ${ratingPanel(tasks, rows, 'a-tasks', 'Оценка по темам творческих заданий')}
+      <div class="dp a-comm"><h3>Комментарии</h3><div class="body">${comments}</div></div>
     </div>`;
-  $('#xlsx').onclick = () => exportXlsx(rows);
+  fitDash();
 }
 
 /* всплывающие подсказки на графиках */
@@ -846,7 +892,7 @@ function tabList(){
   const rows = filtered().slice().sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
   const qual = ITEMS.find(it => it.id === 'quality'), freq = ITEMS.find(it => it.id === 'freq');
   const qa = r => { const v = qual.rows.map(x => +r.f[`${qual.prefix}: ${x}`]).filter(x => x >= 1); return v.length ? v.reduce((a, b) => a + b) / v.length : null; };
-  $('#tab').innerHTML = `<div class="panel"><h3><span>Анкеты: ${rows.length}</span>${rows.length ? '<button class="btn sm" id="xlsx">⬇ Скачать Excel</button>' : ''}</h3>
+  $('#tab').innerHTML = `<div class="panel"><h3><span>Анкеты: ${rows.length}</span></h3>
     ${rows.length ? `<table class="tbl desk"><thead><tr><th>Дата</th><th>Участник</th><th>Группа</th><th>Тренер</th><th>Применение</th><th>Оценка обучения</th></tr></thead>
       <tbody>${rows.map(r => `<tr data-id="${esc(r.id)}"><td>${fmtDate(r.finishedAt)}</td><td><b>${esc(r.surname)} ${esc(r.name)}</b></td>
         <td>${esc(r.group)}</td><td>${esc(r.f['Тренер'] || '—')}</td><td>${esc(r.f[freq.col] || '—')}</td><td><span class="avg" style="background:${avgColor(qa(r))}">${fmtAvg(qa(r))}</span></td></tr>`).join('')}</tbody></table>
@@ -855,7 +901,7 @@ function tabList(){
         <div class="l2">Группа ${esc(r.group)}${r.f['Тренер'] ? ' · ' + esc(r.f['Тренер']) : ''} · ${fmtDate(r.finishedAt)} · ${esc(r.f[freq.col] || '—')}</div></div>`).join('')}</div>`
     : `<div class="empty">${T.rows.length ? 'Под выбранные фильтры анкет нет.' : 'Пока никто не заполнил анкету.'}</div>`}</div>`;
   $$('#tab [data-id]').forEach(el => el.onclick = () => openDetail(el.dataset.id));
-  if ($('#xlsx')) $('#xlsx').onclick = () => exportXlsx(rows);
+
 }
 function openDetail(id){
   const r = T.rows.find(x => x.id === id); if (!r) return;
