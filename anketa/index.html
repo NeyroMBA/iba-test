@@ -61,7 +61,9 @@ h2{font-size:24px;letter-spacing:-.02em;margin:0 0 6px}
 .fld>span{display:block;font-size:14px;font-weight:700;color:var(--muted);margin-bottom:6px}
 .fld input,.ctl{width:100%;font:inherit;font-size:18px;padding:13px 16px;border:1.5px solid var(--line);
   border-radius:14px;background:var(--paper);color:var(--ink);min-height:52px}
-.fld input:focus,textarea:focus{border-color:var(--blue);outline:none;background:#fff}
+.fld select{width:100%;font:inherit;font-size:18px;padding:13px 16px;border:1.5px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);min-height:52px}
+.fld select.bad{border-color:var(--red);background:#FDF0F1}
+.fld input:focus,.fld select:focus,textarea:focus{border-color:var(--blue);outline:none;background:#fff}
 .fld input.bad{border-color:var(--red);background:#FDF0F1}
 .err{color:var(--red);font-size:15px;min-height:22px;margin:10px 0 6px}
 
@@ -143,7 +145,7 @@ textarea.ta{width:100%;font:inherit;font-size:18px;line-height:1.45;padding:14px
 .tabs button{flex:1;white-space:nowrap;font:inherit;font-size:15px;font-weight:700;border:0;background:transparent;
   border-radius:99px;padding:10px 16px;cursor:pointer;color:#2D2D2D;min-height:44px}
 .tabs button.on{background:#fff;box-shadow:0 2px 8px rgba(10,6,5,.08)}
-.filters{display:grid;grid-template-columns:1fr 1fr 1fr 1.4fr;gap:10px;align-items:end;margin-bottom:16px}
+.filters{display:grid;grid-template-columns:1fr 1.2fr 1fr 1fr 1.4fr;gap:10px;align-items:end;margin-bottom:16px}
 .filters label>span{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:4px}
 .ctl{font-size:16px;padding:9px 12px;min-height:44px;border-radius:12px;background:#fff}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
@@ -308,6 +310,7 @@ const CONFIG = {
   ONE_RESPONSE: true,      // одна анкета на участника (фамилия + имя + группа)
   MINUTES: 5,
   TEST_URL: '../',         // итоговый тест (ссылка из панели тренера)
+  TRAINERS: ['Шмаль Елена', 'Филенкова Дарья', 'Зыкина Анна', 'Колоколов Алексей'],   // список «Тренер» в анкете
   DEMO_TRAINER_PASSWORD: 'trainer'
 };
 
@@ -481,7 +484,10 @@ function showLogin(prefGroup = ''){
       <p class="small">Ответы увидит только команда тренинга.${CONFIG.ONE_RESPONSE ? ' Анкету можно заполнить <b>один раз</b>.' : ''}</p>
       <label class="fld"><span>Фамилия</span><input name="surname" autocomplete="family-name" autocapitalize="words" enterkeyhint="next" required value="${esc(u.surname || '')}"></label>
       <label class="fld"><span>Имя</span><input name="name" autocomplete="given-name" autocapitalize="words" enterkeyhint="next" required value="${esc(u.name || '')}"></label>
-      <label class="fld"><span>Номер группы</span><input name="group" autocomplete="off" enterkeyhint="go" required value="${esc(g)}"></label>
+      <label class="fld"><span>Номер группы</span><input name="group" autocomplete="off" enterkeyhint="next" required value="${esc(g)}"></label>
+      <label class="fld"><span>Тренер</span><select name="trainer" required>
+        <option value="">Выберите тренера</option>
+        ${CONFIG.TRAINERS.map(t => `<option ${t === u.trainer ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
       <p class="err" id="err" role="alert"></p>
       <button class="btn wide">Заполнить анкету →</button>
       <p class="sign">${SURVEY.sign}</p>
@@ -491,16 +497,16 @@ function showLogin(prefGroup = ''){
   const f = $('#f');
   f.onsubmit = async e => {
     e.preventDefault();
-    const v = {surname: normName(f.surname.value), name: normName(f.name.value), group: normGroup(f.group.value)};
+    const v = {surname: normName(f.surname.value), name: normName(f.name.value), group: normGroup(f.group.value), trainer: f.trainer.value};
     let bad = null;
-    for (const k of ['surname', 'name', 'group']){
-      const short = k === 'group' ? !v[k] : v[k].length < 2;
+    for (const k of ['surname', 'name', 'group', 'trainer']){
+      const short = k === 'group' || k === 'trainer' ? !v[k] : v[k].length < 2;
       f[k].classList.toggle('bad', short); if (short && !bad) bad = k;
     }
-    if (bad){ $('#err').textContent = 'Заполните все поля: фамилию, имя и номер группы.'; f[bad].focus(); return; }
+    if (bad){ $('#err').textContent = 'Заполните все поля: фамилию, имя, номер группы и выберите тренера.'; f[bad].focus(); return; }
     if (CONFIG.ONE_RESPONSE){
       const btn = f.querySelector('button'); btn.disabled = true; btn.textContent = 'Проверяем…';
-      const r = await Promise.race([api({action: 'survey_check', ...v}).catch(() => null), new Promise(res => setTimeout(res, 8000))]);
+      const r = await Promise.race([api({action: 'survey_check', surname: v.surname, name: v.name, group: v.group}).catch(() => null), new Promise(res => setTimeout(res, 8000))]);
       if (r && r.ok && r.taken) return showTaken(v, r.finishedAt);
     }
     ls.set(K.last, v);
@@ -544,7 +550,7 @@ function showSection(){
   setKicker('Анкета участника');
   const n = SURVEY.sections.length, i = S.step, sec = SURVEY.sections[i], last = i === n - 1;
   $('#app').innerHTML = `
-    <div class="qtop"><span class="who">${esc(S.user.surname)} ${esc(S.user.name)} · группа ${esc(S.user.group)}</span>
+    <div class="qtop"><span class="who">${esc(S.user.surname)} ${esc(S.user.name)} · группа ${esc(S.user.group)}${S.user.trainer ? ' · тренер ' + esc(S.user.trainer) : ''}</span>
       <span class="num">Раздел ${i + 1} из ${n}</span></div>
     <div class="bar"><i style="width:${i / n * 100}%"></i></div>
     <div class="card">
@@ -606,7 +612,7 @@ function finish(){
   const A = {...S.A};
   for (const it of ITEMS) if (it.type === 'text' && A[it.id]) A[it.id] = A[it.id].trim();
   const rec = {id: uid(), surname: S.user.surname, name: S.user.name, group: S.user.group,
-    startedAt: S.startedAt, finishedAt: fin.toISOString(), fields: toFields(A)};
+    startedAt: S.startedAt, finishedAt: fin.toISOString(), fields: [['Тренер', S.user.trainer || ''], ...toFields(A)]};
   S.done = {rec, sent: false}; save(); outboxAdd(rec);
   sendFailed = false; showThanks(); top0(); flushOutbox();
 }
@@ -652,7 +658,7 @@ $('#modal').onclick = e => { if (e.target.id === 'modal') closeModal(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape'){ closeModal(); $('#qrbig').classList.remove('on'); } });
 
 /* ======================= ТРЕНЕР ======================= */
-const T = {pwd: null, rows: [], tab: 'summary', f: {group: '', from: '', to: '', q: ''}};
+const T = {pwd: null, rows: [], tab: 'summary', f: {group: '', trainer: '', from: '', to: '', q: ''}};
 
 function showTrainerLogin(err = ''){
   setKicker('Панель тренера'); $('#demo').hidden = true;
@@ -689,11 +695,12 @@ async function loadResults(){
 function filtered(){
   const f = T.f, q = f.q.trim().toLowerCase();
   return T.rows.filter(r =>
-    (!f.group || r.group === f.group) &&
+    (!f.group || r.group === f.group) && (!f.trainer || (r.f['Тренер'] || '') === f.trainer) &&
     (!f.from || dayKey(r.finishedAt) >= f.from) && (!f.to || dayKey(r.finishedAt) <= f.to) &&
     (!q || `${r.surname} ${r.name}`.toLowerCase().includes(q) ||
       ITEMS.some(it => it.type === 'text' && String(r.f[it.col] || '').toLowerCase().includes(q))));
 }
+const trainersList = () => [...new Set([...CONFIG.TRAINERS, ...T.rows.map(r => r.f['Тренер']).filter(Boolean)])];
 const groupsList = () => [...new Set(T.rows.map(r => r.group))].sort((a, b) => a.localeCompare(b, 'ru', {numeric: true}));
 function stat(rows, h){
   const d = [0, 0, 0, 0, 0]; let s = 0, n = 0;
@@ -731,6 +738,8 @@ function renderFilters(){
     <div class="filters">
       <label><span>Группа</span><select class="ctl" data-f="group"><option value="">Все группы</option>
         ${gs.map(g => `<option ${g === f.group ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select></label>
+      <label><span>Тренер</span><select class="ctl" data-f="trainer"><option value="">Все тренеры</option>
+        ${trainersList().map(t => `<option ${t === f.trainer ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
       <label><span>С даты</span><input type="date" class="ctl" data-f="from" value="${f.from}"></label>
       <label><span>По дату</span><input type="date" class="ctl" data-f="to" value="${f.to}"></label>
       <label class="fsearch"><span>Поиск по имени или тексту отзывов</span><input type="search" class="ctl" data-f="q" value="${esc(f.q)}" placeholder="Например, Power Query"></label>
@@ -778,7 +787,7 @@ function tabSummary(){
   const shortQ = {'Лекции': 'Лекции, теория', 'Практические занятия': 'Практика', 'Обратная связь': 'Обратная связь'};
   const comments = [['liked', 'Понравилось'], ['result', 'Главный результат'], ['improve', 'Стоит доработать']].map(([id, t]) => {
     const it = byIt(id), list = rows.filter(r => String(r.f[it.col] || '').trim()).sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
-    return `<div class="cl"><h4>${t}<em>${list.length}</em></h4><ul>${list.length ? list.map(r => `<li>${esc(r.f[it.col])}<span>${esc(r.surname)} ${esc(r.name)} · гр. ${esc(r.group)}</span></li>`).join('')
+    return `<div class="cl"><h4>${t}<em>${list.length}</em></h4><ul>${list.length ? list.map(r => `<li>${esc(r.f[it.col])}<span>${esc(r.surname)} ${esc(r.name)} · гр. ${esc(r.group)}${r.f['Тренер'] ? ' · ' + esc(r.f['Тренер']) : ''}</span></li>`).join('')
       : '<li style="color:var(--muted)">Пока нет ответов</li>'}</ul></div>`;
   }).join('');
   const act = [['Качество обучения', qual], ['Учебная часть', topics], ['Творческие задания', tasks]].map(([t, it]) => {
@@ -843,19 +852,19 @@ function tabList(){
   const qual = ITEMS.find(it => it.id === 'quality'), freq = ITEMS.find(it => it.id === 'freq');
   const qa = r => { const v = qual.rows.map(x => +r.f[`${qual.prefix}: ${x}`]).filter(x => x >= 1); return v.length ? v.reduce((a, b) => a + b) / v.length : null; };
   $('#tab').innerHTML = `<div class="panel"><h3><span>Анкеты: ${rows.length}</span>${rows.length ? '<button class="btn sm" id="xlsx">⬇ Скачать Excel</button>' : ''}</h3>
-    ${rows.length ? `<table class="tbl desk"><thead><tr><th>Дата</th><th>Участник</th><th>Группа</th><th>Применение</th><th>Оценка обучения</th></tr></thead>
+    ${rows.length ? `<table class="tbl desk"><thead><tr><th>Дата</th><th>Участник</th><th>Группа</th><th>Тренер</th><th>Применение</th><th>Оценка обучения</th></tr></thead>
       <tbody>${rows.map(r => `<tr data-id="${esc(r.id)}"><td>${fmtDate(r.finishedAt)}</td><td><b>${esc(r.surname)} ${esc(r.name)}</b></td>
-        <td>${esc(r.group)}</td><td>${esc(r.f[freq.col] || '—')}</td><td><span class="avg" style="background:${avgColor(qa(r))}">${fmtAvg(qa(r))}</span></td></tr>`).join('')}</tbody></table>
+        <td>${esc(r.group)}</td><td>${esc(r.f['Тренер'] || '—')}</td><td>${esc(r.f[freq.col] || '—')}</td><td><span class="avg" style="background:${avgColor(qa(r))}">${fmtAvg(qa(r))}</span></td></tr>`).join('')}</tbody></table>
       <div class="cards">${rows.map(r => `<div class="rc" data-id="${esc(r.id)}"><div class="l1"><span>${esc(r.surname)} ${esc(r.name)}</span>
         <span class="avg" style="background:${avgColor(qa(r))}">${fmtAvg(qa(r))}</span></div>
-        <div class="l2">Группа ${esc(r.group)} · ${fmtDate(r.finishedAt)} · ${esc(r.f[freq.col] || '—')}</div></div>`).join('')}</div>`
+        <div class="l2">Группа ${esc(r.group)}${r.f['Тренер'] ? ' · ' + esc(r.f['Тренер']) : ''} · ${fmtDate(r.finishedAt)} · ${esc(r.f[freq.col] || '—')}</div></div>`).join('')}</div>`
     : `<div class="empty">${T.rows.length ? 'Под выбранные фильтры анкет нет.' : 'Пока никто не заполнил анкету.'}</div>`}</div>`;
   $$('#tab [data-id]').forEach(el => el.onclick = () => openDetail(el.dataset.id));
   if ($('#xlsx')) $('#xlsx').onclick = () => exportXlsx(rows);
 }
 function openDetail(id){
   const r = T.rows.find(x => x.id === id); if (!r) return;
-  openModal(`<p class="kick" style="margin:0 0 6px">Группа ${esc(r.group)} · ${fmtDate(r.finishedAt)}</p>
+  openModal(`<p class="kick" style="margin:0 0 6px">Группа ${esc(r.group)}${r.f['Тренер'] ? ' · тренер ' + esc(r.f['Тренер']) : ''} · ${fmtDate(r.finishedAt)}</p>
     <h2 style="font-size:28px;margin-right:50px">${esc(r.surname)} ${esc(r.name)}</h2>
     <dl class="det">${ITEMS.map(it => it.type === 'scale'
       ? `<dt>${esc(it.q)}</dt><dd>${it.rows.map(x => { const v = r.f[`${it.prefix}: ${x}`];
@@ -876,25 +885,27 @@ async function exportXlsx(rows){
   const sheet = (aoa, widths) => { const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = widths.map(w => ({wch: w}));
     ws['!autofilter'] = {ref: XLSX.utils.encode_range({s: {r: 0, c: 0}, e: {r: aoa.length - 1, c: aoa[0].length - 1}})}; return ws; };
   const sorted = rows.slice().sort((a, b) => a.finishedAt.localeCompare(b.finishedAt));
-  const answers = [['Дата', 'Фамилия', 'Имя', 'Группа', ...COLS.map(c => c.h)]];
+  const answers = [['Дата', 'Фамилия', 'Имя', 'Группа', 'Тренер', ...COLS.map(c => c.h)]];
   for (const r of sorted) answers.push([{t: 'n', v: xlDate(r.finishedAt), z: 'dd.mm.yyyy hh:mm'}, r.surname, r.name,
-    /^\d+$/.test(r.group) ? +r.group : r.group,
+    /^\d+$/.test(r.group) ? +r.group : r.group, r.f['Тренер'] || '',
     ...COLS.map(c => { const v = r.f[c.h]; return c.it.type === 'scale' && v !== '' && v != null ? +v : (v ?? ''); })]);
   const groups = [...new Set(sorted.map(r => r.group))].sort((a, b) => a.localeCompare(b, 'ru', {numeric: true}));
-  const scores = [['Раздел', 'Пункт', 'Средняя', 'Оценок', '1', '2', '3', '4', '5', ...groups.map(g => 'Группа ' + g)]];
+  const trs = [...new Set(sorted.map(r => r.f['Тренер']).filter(Boolean))];
+  const scores = [['Раздел', 'Пункт', 'Средняя', 'Оценок', '1', '2', '3', '4', '5', ...groups.map(g => 'Группа ' + g), ...trs]];
   for (const c of COLS.filter(c => c.it.type === 'scale')){
     const st = stat(sorted, c.h);
     scores.push([c.it.prefix, c.row, st.avg == null ? '' : {t: 'n', v: Math.round(st.avg * 100) / 100, z: '0.00'}, st.n, ...st.d,
-      ...groups.map(g => { const s2 = stat(sorted.filter(r => r.group === g), c.h); return s2.avg == null ? '' : {t: 'n', v: Math.round(s2.avg * 100) / 100, z: '0.00'}; })]);
+      ...groups.map(g => { const s2 = stat(sorted.filter(r => r.group === g), c.h); return s2.avg == null ? '' : {t: 'n', v: Math.round(s2.avg * 100) / 100, z: '0.00'}; }),
+      ...trs.map(t => { const s2 = stat(sorted.filter(r => r.f['Тренер'] === t), c.h); return s2.avg == null ? '' : {t: 'n', v: Math.round(s2.avg * 100) / 100, z: '0.00'}; })]);
   }
   const freq = ITEMS.find(it => it.id === 'freq');
   const fr = [['Как часто будет применять', 'Ответов', 'Доля, %']];
   freq.o.forEach(o => { const c = sorted.filter(r => r.f[freq.col] === o).length; fr.push([o, c, sorted.length ? Math.round(c / sorted.length * 100) : 0]); });
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, sheet(answers, [17, 16, 14, 9, ...COLS.map(c => c.it.type === 'scale' ? 12 : 40)]), 'Ответы');
-  XLSX.utils.book_append_sheet(wb, sheet(scores, [10, 36, 9, 8, 5, 5, 5, 5, 5, ...groups.map(() => 11)]), 'Оценки');
+  XLSX.utils.book_append_sheet(wb, sheet(answers, [17, 16, 14, 9, 18, ...COLS.map(c => c.it.type === 'scale' ? 12 : 40)]), 'Ответы');
+  XLSX.utils.book_append_sheet(wb, sheet(scores, [10, 36, 9, 8, 5, 5, 5, 5, 5, ...groups.map(() => 11), ...trs.map(() => 17)]), 'Оценки');
   XLSX.utils.book_append_sheet(wb, sheet(fr, [30, 10, 10]), 'Применение');
-  XLSX.writeFile(wb, `Анкета_${T.f.group ? 'группа_' + T.f.group + '_' : ''}${dayKey(new Date())}.xlsx`);
+  XLSX.writeFile(wb, `Анкета_${T.f.group ? 'группа_' + T.f.group + '_' : ''}${T.f.trainer ? T.f.trainer.replace(/\s+/g, '_') + '_' : ''}${dayKey(new Date())}.xlsx`);
   btn.disabled = false; btn.textContent = '⬇ Скачать Excel';
 }
 
@@ -945,7 +956,7 @@ function seedDemo(){
     for (const it of ITEMS.filter(it => it.type === 'scale')){
       A[it.id] = {}; it.rows.forEach(r => { if (Math.random() < .93) A[it.id][r] = Math.max(1, Math.min(5, Math.round(bias + Math.random() * 1.6 - .8))); }); }
     db.push({id: uid(), surname: s, name: n, group: g, finishedAt: new Date(now - (g === '16' ? 1 : 8) * 864e5 - i * 4e5).toISOString(),
-      f: Object.fromEntries(toFields(A))});
+      f: Object.fromEntries([['Тренер', CONFIG.TRAINERS[i % CONFIG.TRAINERS.length]], ...toFields(A)])});
   });
   ls.set(K.demo, db);
 }
