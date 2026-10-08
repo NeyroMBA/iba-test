@@ -282,7 +282,7 @@ const CONFIG = {
   TITLE: 'Визуализация данных и информационные панели <em>Dashboard</em>',
   PASS_PCT: 70,            // проходной балл, %
   MINUTES: 10,             // ориентировочное время, показывается на стартовом экране
-  ALLOW_RETAKE: true,      // можно ли пройти тест повторно
+  ALLOW_RETAKE: false,     // false — одна попытка: повторно пройти под тем же именем и группой нельзя
   SHOW_ANSWERS: true,      // показывать участнику правильные ответы в разборе
   DEMO_TRAINER_PASSWORD: 'trainer'   // пароль тренера только для демо-режима
 };
@@ -371,11 +371,16 @@ async function api(payload){
 }
 function demoApi(p){
   const db = ls.get(K.demo, []);
+  if (p.action === 'check'){
+    const prev = db.find(x => personKey(x) === personKey(p));
+    return {ok: true, taken: !!prev, finishedAt: prev ? prev.finishedAt : null};
+  }
   if (p.action === 'submit'){
     let rec = db.find(x => x.id === p.record.id);
     if (!rec){
-      const attempt = db.filter(x => personKey(x) === personKey(p.record)).length + 1;
-      rec = {...p.record, attempt}; db.push(rec); ls.set(K.demo, db);
+      const prev = db.filter(x => personKey(x) === personKey(p.record));
+      if (!CONFIG.ALLOW_RETAKE && prev.length) return {ok: false, error: 'already_taken', finishedAt: prev[0].finishedAt};
+      rec = {...p.record, attempt: prev.length + 1}; db.push(rec); ls.set(K.demo, db);
     }
     return {ok: true, attempt: rec.attempt};
   }
@@ -396,6 +401,11 @@ async function flushOutbox(){
     for (const rec of ls.get(K.outbox, [])){
       try {
         const r = await api({action: 'submit', record: rec});
+        if (r && r.error === 'already_taken'){   // повторная попытка — сервер её не принял
+          ls.set(K.outbox, ls.get(K.outbox, []).filter(x => x.id !== rec.id));
+          if (S && S.result && S.result.rec.id === rec.id){ S.result.rejected = r.finishedAt || true; save(); }
+          continue;
+        }
         if (!r || !r.ok) throw new Error(r && r.error || 'error');
         ls.set(K.outbox, ls.get(K.outbox, []).filter(x => x.id !== rec.id));
         if (S && S.result && S.result.rec.id === rec.id){ S.result.sent = true; S.result.attempt = r.attempt; save(); }
@@ -436,7 +446,7 @@ function showLogin(prefGroup = ''){
       </ul>
     <form class="card login" id="f" novalidate>
       <h2>Представьтесь</h2>
-      <p class="small">Данные увидит только тренер.</p>
+      <p class="small">Данные увидит только тренер.${CONFIG.ALLOW_RETAKE ? '' : ' Пройти тест можно <b>один раз</b>.'}</p>
       <label class="fld"><span>Фамилия</span><input name="surname" autocomplete="family-name" autocapitalize="words" enterkeyhint="next" required></label>
       <label class="fld"><span>Имя</span><input name="name" autocomplete="given-name" autocapitalize="words" enterkeyhint="next" required></label>
       <label class="fld"><span>Номер группы</span><input name="group" autocomplete="off" enterkeyhint="go" required value="${esc(prefGroup)}"></label>
@@ -446,7 +456,7 @@ function showLogin(prefGroup = ''){
   </div>
   <p class="foot"><a href="?trainer" id="toTrainer">Вход для тренера</a></p>`;
   const f = $('#f');
-  f.onsubmit = e => {
+  f.onsubmit = async e => {
     e.preventDefault();
     const v = {surname: normName(f.surname.value), name: normName(f.name.value), group: normGroup(f.group.value)};
     let bad = null;
@@ -455,9 +465,27 @@ function showLogin(prefGroup = ''){
       f[k].classList.toggle('bad', short); if (short && !bad) bad = k;
     }
     if (bad){ $('#err').textContent = 'Заполните все поля: фамилию, имя и номер группы.'; f[bad].focus(); return; }
+    if (CONFIG.ALLOW_RETAKE) return startTest(v);
+    const btn = f.querySelector('button'); btn.disabled = true; btn.textContent = 'Проверяем…';
+    // проверяем, не проходил ли участник тест раньше; без связи — пускаем, сервер проверит при отправке
+    const r = await Promise.race([api({action: 'check', ...v}).catch(() => null), new Promise(res => setTimeout(res, 8000))]);
+    if (r && r.ok && r.taken) return showTaken(v, r.finishedAt);
     startTest(v);
   };
   $('#toTrainer').onclick = e => { e.preventDefault(); showTrainerLogin(); };
+}
+
+function showTaken(user, when){
+  setKicker('Итоговое тестирование');
+  $('#app').innerHTML = `
+    <div class="card" style="max-width:640px;margin:0 auto">
+      <h2>Тест уже пройден</h2>
+      <p class="lead" style="margin:10px 0 18px"><b>${esc(user.surname)} ${esc(user.name)}</b>, группа ${esc(user.group)},
+        уже проходил(а) этот тест${when ? ' ' + fmtDate(when) : ''}. Пройти его можно только один раз.</p>
+      <p class="small">Если это ошибка или вы однофамилец из той же группы — обратитесь к тренеру.</p>
+      <div class="row" style="margin-top:22px"><button type="button" class="btn ghost" id="back">← Назад</button></div>
+    </div>`;
+  $('#back').onclick = () => { showLogin(user.group); top0(); };
 }
 
 function startTest(user){
@@ -592,7 +620,7 @@ function showResult(){
   $$('.dots a').forEach(a => a.onclick = e => { e.preventDefault(); $(a.getAttribute('href')).scrollIntoView({behavior: 'smooth'}); });
   if ($('#again')) $('#again').onclick = () => startTest(S.user);
   $('#exit').onclick = () => {
-    if (!S.result.sent && !confirm('Результат ещё не отправлен тренеру. Всё равно выйти? Отправка продолжится, когда вы снова откроете тест на этом устройстве.')) return;
+    if (!S.result.sent && !S.result.rejected && !confirm('Результат ещё не отправлен тренеру. Всё равно выйти? Отправка продолжится, когда вы снова откроете тест на этом устройстве.')) return;
     S = null; ls.del(K.state); showLogin(); top0();
   };
   updateSendStatus();
@@ -600,7 +628,10 @@ function showResult(){
 function updateSendStatus(){
   const el = $('#send'); if (!el || !S || !S.result) return;
   const r = S.result;
-  if (r.sent){
+  if (r.rejected){
+    el.className = 'send bad';
+    el.innerHTML = `Этот результат не засчитан: тест уже был пройден под этим именем${r.rejected !== true ? ' ' + fmtDate(r.rejected) : ''}. Засчитывается только первая попытка. Если это ошибка — обратитесь к тренеру.`;
+  } else if (r.sent){
     el.className = 'send ok';
     el.innerHTML = DEMO ? '✓ Сохранено в демо-режиме (только в этом браузере)' : '✓ Результат сохранён — тренер его видит';
     if (r.attempt > 1) $('#att').innerHTML = `Попытка <b>${r.attempt}</b>`;
