@@ -190,6 +190,57 @@ table.tbl{width:100%;border-collapse:collapse;font-size:16px}
 .linkline{font-family:ui-monospace,Consolas,monospace;font-size:14px;background:var(--paper);border:1px solid var(--line);
   border-radius:10px;padding:10px 12px;word-break:break-all;margin:10px 0}
 
+/* ---------- дашборд анкеты ---------- */
+.wrap.wide{max-width:1320px}
+:root{--good:#1B8A4C;--mid:#E2C044;--low:#D7263D;--col:#EF8A4C}
+.dtool{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 12px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
+.kp4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+.kbig{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.kbig .t{font-size:17px;font-weight:700;color:#2D2D2D}
+.kbig .v{font-size:48px;font-weight:900;letter-spacing:-.03em;line-height:1.1;margin:6px 0 6px;color:var(--ink)}
+.kbig.sm .t{font-size:14px;font-weight:600;color:var(--muted);order:2}
+.kbig.sm .v{font-size:28px;margin:0 0 4px;order:1}
+.kbig.sm .v.txt{font-size:18px;line-height:1.25}
+.kbig.sm .pill{order:3;margin-top:4px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#2D2D2D}
+.pill i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.dash{display:flex;gap:12px;align-items:flex-start}
+.dcol{display:flex;flex-direction:column;gap:12px;min-width:0;flex:1 1 0}
+.dcol.c2{flex-grow:1.25}
+.dp{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;min-width:0}
+.dp h3{font-size:17px;margin:0 0 12px;line-height:1.25}
+.cols{display:flex;align-items:flex-end;gap:10px;height:190px;border-bottom:1px solid var(--line)}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;cursor:default}
+.col b{font-size:15px;margin-bottom:4px}
+.col i{display:block;width:72%;max-width:64px;background:var(--col);border-radius:4px 4px 0 0;min-height:2px}
+.col:hover i{filter:brightness(.92)}
+.clabels{display:flex;gap:10px;margin-top:8px}
+.clabels span{flex:1;text-align:center;font-size:13px;color:var(--muted);line-height:1.25}
+.rbar{display:grid;grid-template-columns:minmax(110px,44%) 1fr;gap:10px;align-items:center;padding:3px 0;font-size:14px;cursor:default}
+.rbar .n{text-align:right;color:#2D2D2D;line-height:1.2}
+.rbar .tr{display:flex;align-items:center;gap:8px}
+.rbar .tr s{flex:1;display:block;text-decoration:none}
+.rbar .tr i{display:block;height:20px;border-radius:0 4px 4px 0}
+.rbar:hover .tr i{filter:brightness(.92)}
+.rbar .tr b{font-size:14px;min-width:28px}
+.rlegend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:12px}
+.rlegend span{display:inline-flex;align-items:center;gap:5px}
+.rlegend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.cl+.cl{margin-top:16px}
+.cl h4{font-size:15px;margin:0 0 6px;display:flex;justify-content:space-between;gap:8px}
+.cl h4 em{font-style:normal;color:var(--kick);font-weight:600}
+.cl ul{list-style:none;margin:0;padding:0;max-height:200px;overflow:auto;border-top:1px solid var(--line)}
+.cl li{padding:8px 2px;border-bottom:1px solid #EEF0EA;font-size:14px;line-height:1.4;white-space:pre-wrap}
+.cl li span{display:block;font-size:12px;color:var(--kick);margin-top:2px;white-space:normal}
+#tip{position:fixed;z-index:90;background:var(--ink);color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.45;
+  pointer-events:none;opacity:0;transition:opacity .1s;max-width:280px;left:0;top:0}
+#tip.on{opacity:1}
+@media (max-width:1100px){.dash{flex-wrap:wrap}.dcol{flex:1 1 calc(50% - 6px)}.dcol.c3{flex-basis:100%}}
+@media (max-width:760px){
+  .kp4{grid-template-columns:1fr 1fr}
+  .kbig .v{font-size:36px}
+  .dcol,.dcol.c3{flex-basis:100%}
+}
 @media (max-width:860px){
   .hero{grid-template-columns:1fr;grid-template-areas:'intro' 'form' 'rules';gap:0}
   .hero .login{margin-bottom:22px}
@@ -246,6 +297,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:16px}
 <div id="qrbig"><div class="qrc" id="qrbigc"></div><h2 id="qrbigt"></h2><p id="qrbigl"></p>
   <button class="btn ghost" id="qrbigx">Закрыть</button></div>
 <div id="toast"></div>
+<div id="tip" role="tooltip"></div>
 
 <script>
 /* ======================= НАСТРОЙКИ ======================= */
@@ -650,7 +702,7 @@ function stat(rows, h){
 }
 
 function showTrainer(){
-  setKicker('Панель тренера'); $('#demo').hidden = true;
+  setKicker('Панель тренера'); $('#demo').hidden = true; $('.wrap').classList.add('wide');
   $('#app').innerHTML = `
     <div class="thead"><h1>Анкеты участников</h1>
       <div class="acts"><a class="btn ghost sm" href="${CONFIG.TEST_URL}?trainer">Итоговый тест →</a>
@@ -658,7 +710,7 @@ function showTrainer(){
     ${DEMO ? `<div class="demo">Демо-режим: показаны ответы из этого браузера.
       <button class="btn sm" id="seed">Добавить примеры</button><button class="btn ghost sm" id="wipe">Очистить</button></div>` : ''}
     <nav class="tabs">
-      <button data-t="summary">Сводка<span class="lg"> оценок</span></button><button data-t="feedback">Отзывы</button>
+      <button data-t="summary">Дашборд</button><button data-t="feedback">Отзывы</button>
       <button data-t="list">Анкеты</button><button data-t="share">Ссылка<span class="lg"> и QR</span></button>
     </nav>
     <div id="filters"></div><div id="tab"></div>`;
@@ -692,42 +744,90 @@ function renderTab(){
   ({summary: tabSummary, feedback: tabFeedback, list: tabList, share: tabShare})[T.tab]();
 }
 
-const distBar = st => st.n ? `<span class="dist">${st.d.map((c, k) => c ? `<i class="d${k + 1}" style="width:${c / st.n * 100}%" title="${k + 1}: ${c}"></i>` : '').join('')}</span>` : '<span class="dist"></span>';
-const legend = `<div class="dlegend">${[1,2,3,4,5].map(n => `<span><i style="background:var(--s${n})"></i>${n}</span>`).join('')}<span>— оценки</span></div>`;
-function scalePanel(it, rows, sort){
-  let list = it.rows.map(r => ({r, st: stat(rows, `${it.prefix}: ${r}`)}));
-  if (sort) list = list.sort((a, b) => (b.st.avg ?? -1) - (a.st.avg ?? -1));
-  return `<div class="panel"><h3>${esc(it.q)}</h3><p class="sub">${sort ? 'Отсортировано по средней оценке' : 'Средняя оценка и распределение'}</p>${legend}
-    ${list.map(({r, st}) => `<div class="hb"><span class="hl">${esc(r)}<em>${st.n} ${plural(st.n,'оценка','оценки','оценок')}</em></span>${distBar(st)}
-      <b><span class="avg" style="background:${avgColor(st.avg)}">${fmtAvg(st.avg)}</span></b></div>`).join('')}</div>`;
+/* --- вкладка «Дашборд» --- */
+const status = v => v == null ? {c: '#D9DCD4', t: 'нет оценок'} : v >= 4.5 ? {c: 'var(--good)', t: 'отлично'}
+  : v >= 4 ? {c: 'var(--mid)', t: 'хорошо'} : {c: 'var(--low)', t: 'есть над чем работать'};
+const pill = v => `<span class="pill"><i style="background:${status(v).c}"></i>${status(v).t}</span>`;
+const tipStat = (name, st) => `<b>${esc(name)}</b><br>Средняя: ${fmtAvg(st.avg)} · ${st.n} ${plural(st.n,'оценка','оценки','оценок')}`
+  + (st.n ? `<br>${st.d.map((c, k) => `«${k + 1}» — ${c}`).join(', ')}` : '');
+function pooled(rows, it){
+  let s = 0, n = 0;
+  for (const r of it.rows){ const st = stat(rows, `${it.prefix}: ${r}`); s += (st.avg || 0) * st.n; n += st.n; }
+  return {avg: n ? s / n : null, n};
+}
+const rbar = (name, st, tip) => `<div class="rbar" data-tip="${esc(tip || tipStat(name, st))}"><span class="n">${esc(name)}</span>
+  <span class="tr"><s><i style="width:${st.avg ? st.avg / 5 * 100 : 0}%;background:${status(st.avg).c}"></i></s><b>${fmtAvg(st.avg)}</b></span></div>`;
+const rlegend = `<div class="rlegend"><span><i style="background:var(--good)"></i>4,5–5 отлично</span>
+  <span><i style="background:var(--mid)"></i>4,0–4,4 хорошо</span><span><i style="background:var(--low)"></i>ниже 4,0</span></div>`;
+function ratingPanel(it, rows, area, title){
+  const list = it.rows.map(r => ({r, st: stat(rows, `${it.prefix}: ${r}`)})).sort((a, b) => (b.st.avg ?? -1) - (a.st.avg ?? -1));
+  return `<div class="dp ${area}"><h3>${title}</h3>${list.map(x => rbar(x.r, x.st)).join('')}${rlegend}</div>`;
 }
 function tabSummary(){
   const rows = filtered(), n = rows.length;
   const byIt = id => ITEMS.find(it => it.id === id);
-  const qual = byIt('quality'), topics = byIt('topics'), freq = byIt('freq');
-  const qAll = qual.rows.map(r => stat(rows, `${qual.prefix}: ${r}`));
-  const qn = qAll.reduce((s, x) => s + x.n, 0), qavg = qn ? qAll.reduce((s, x) => s + (x.avg || 0) * x.n, 0) / qn : null;
-  const tops = topics.rows.map(r => ({r, st: stat(rows, `${topics.prefix}: ${r}`)})).filter(x => x.st.n).sort((a, b) => b.st.avg - a.st.avg);
-  const fc = freq.o.map(o => rows.filter(r => r.f[freq.col] === o).length);
-  const often = n ? Math.round((fc[0] + fc[1]) / n * 100) : null;
-  $('#tab').innerHTML = !n ? `<div class="panel empty">${T.rows.length ? 'Под выбранные фильтры анкет нет.' : 'Пока никто не заполнил анкету.'}</div>` : `
-    <div class="kpis">
-      <div class="kpi"><b>${n}</b><span>${plural(n,'анкета','анкеты','анкет')}</span></div>
-      <div class="kpi"><b>${fmtAvg(qavg)}</b><span>средняя оценка обучения</span></div>
-      <div class="kpi"><b>${often}%</b><span>применят еженедельно или чаще</span></div>
-      <div class="kpi"><b style="font-size:20px;line-height:1.25">${tops[0] ? esc(tops[0].r) : '—'}</b><span>самая полезная тема${tops[0] ? ' · ' + fmtAvg(tops[0].st.avg) : ''}</span></div>
+  const qual = byIt('quality'), topics = byIt('topics'), tasks = byIt('tasks'), freq = byIt('freq');
+  if (!n){ $('#tab').innerHTML = `<div class="panel empty">${T.rows.length ? 'Под выбранные фильтры анкет нет.' : 'Пока никто не заполнил анкету.'}</div>`; return; }
+  const q = qual.rows.map(r => ({r, st: stat(rows, `${qual.prefix}: ${r}`)}));
+  const qp = pooled(rows, qual);
+  const best = it => it.rows.map(r => ({r, st: stat(rows, `${it.prefix}: ${r}`)})).filter(x => x.st.n).sort((a, b) => b.st.avg - a.st.avg)[0];
+  const bTopic = best(topics), bTask = best(tasks);
+  const fc = freq.o.map(o => rows.filter(r => r.f[freq.col] === o).length), fmax = Math.max(1, ...fc);
+  const often = Math.round((fc[0] + fc[1]) / n * 100);
+  const people = new Set(rows.map(personKey)).size;
+  const shortQ = {'Лекции': 'Лекции, теория', 'Практические занятия': 'Практика', 'Обратная связь': 'Обратная связь'};
+  const comments = [['liked', 'Понравилось'], ['result', 'Главный результат'], ['improve', 'Стоит доработать']].map(([id, t]) => {
+    const it = byIt(id), list = rows.filter(r => String(r.f[it.col] || '').trim()).sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
+    return `<div class="cl"><h4>${t}<em>${list.length}</em></h4><ul>${list.length ? list.map(r => `<li>${esc(r.f[it.col])}<span>${esc(r.surname)} ${esc(r.name)} · гр. ${esc(r.group)}</span></li>`).join('')
+      : '<li style="color:var(--muted)">Пока нет ответов</li>'}</ul></div>`;
+  }).join('');
+  const act = [['Качество обучения', qual], ['Учебная часть', topics], ['Творческие задания', tasks]].map(([t, it]) => {
+    const st = pooled(rows, it);
+    return rbar(t, st, `<b>${t}</b><br>Средняя по всем пунктам: ${fmtAvg(st.avg)} · ${st.n} ${plural(st.n,'оценка','оценки','оценок')}`);
+  }).join('');
+  $('#tab').innerHTML = `
+    <div class="dtool"><span>${n} ${plural(n,'анкета','анкеты','анкет')} по выбранным фильтрам · наведите на график, чтобы увидеть детали</span>
+      <button class="btn sm" id="xlsx">⬇ Скачать Excel</button></div>
+    <div class="kp4">
+      ${q.map(x => `<div class="kbig" data-tip="${esc(tipStat(x.r, x.st))}"><div class="t">${esc(shortQ[x.r] || x.r)}</div>
+        <div class="v">${fmtAvg(x.st.avg)}</div>${pill(x.st.avg)}</div>`).join('')}
+      <div class="kbig"><div class="t">Кол-во слушателей</div><div class="v">${people}</div>
+        <span class="pill">${n} ${plural(n,'анкета','анкеты','анкет')}</span></div>
     </div>
-    <div class="grid2p">
-      <div class="panel"><h3>${esc(freq.q)}</h3><p class="sub">${n} ${plural(n,'ответ','ответа','ответов')}</p>
-        ${freq.o.map((o, k) => `<div class="hb"><span class="hl">${esc(o)}</span><s><i style="width:${n ? fc[k] / n * 100 : 0}%"></i></s>
-          <b>${fc[k]}</b></div>`).join('')}</div>
-      ${scalePanel(qual, rows, false)}
+    <div class="kp4">
+      <div class="kbig sm"><div class="t">средняя оценка обучения</div><div class="v">${fmtAvg(qp.avg)}</div>${pill(qp.avg)}</div>
+      <div class="kbig sm"><div class="t">применят еженедельно или чаще</div><div class="v">${often}%</div></div>
+      <div class="kbig sm"><div class="t">самая полезная тема${bTopic ? ' · ' + fmtAvg(bTopic.st.avg) : ''}</div><div class="v txt">${bTopic ? esc(bTopic.r) : '—'}</div></div>
+      <div class="kbig sm"><div class="t">лучшее творческое задание${bTask ? ' · ' + fmtAvg(bTask.st.avg) : ''}</div><div class="v txt">${bTask ? esc(bTask.r) : '—'}</div></div>
     </div>
-    ${ITEMS.filter(it => it.type === 'scale' && it.id !== 'quality').map(it => scalePanel(it, rows, true)).join('')}
-    <div class="panel"><h3><span>Выгрузка</span><button class="btn sm" id="xlsx">⬇ Скачать Excel</button></h3>
-      <p class="sub" style="margin:0">Все ответы и средние оценки с учётом фильтров.</p></div>`;
-  if ($('#xlsx')) $('#xlsx').onclick = () => exportXlsx(rows);
+    <div class="dash"><div class="dcol c1">
+      <div class="dp a-freq"><h3>Частота применения навыков с обучения</h3>
+        <div class="cols">${fc.map((c, k) => `<div class="col" data-tip="${esc(`<b>${esc(freq.o[k])}</b><br>${c} ${plural(c,'человек','человека','человек')} · ${Math.round(c / n * 100)}%`)}">
+          <b>${c}</b><i style="height:${c / fmax * 82}%"></i></div>`).join('')}</div>
+        <div class="clabels">${freq.o.map(o => `<span>${esc(o)}</span>`).join('')}</div></div>
+      <div class="dp a-act"><h3>Оценка по видам деятельности</h3>${act}</div></div>
+      <div class="dcol c2">${ratingPanel(topics, rows, 'a-topics', 'Оценка по темам учебной части')}
+      ${ratingPanel(tasks, rows, 'a-tasks', 'Оценка по темам творческих заданий')}</div>
+      <div class="dcol c3"><div class="dp a-comm"><h3>Комментарии</h3>${comments}</div></div>
+    </div>`;
+  $('#xlsx').onclick = () => exportXlsx(rows);
 }
+
+/* всплывающие подсказки на графиках */
+(() => {
+  const tip = $('#tip');
+  const place = (x, y) => { const w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, x + 14)) + 'px';
+    tip.style.top = (y + h + 24 > innerHeight ? y - h - 12 : y + 16) + 'px'; };
+  document.addEventListener('mouseover', e => { const t = e.target.closest('[data-tip]');
+    if (!t){ tip.classList.remove('on'); return; } tip.innerHTML = t.dataset.tip; tip.classList.add('on'); });
+  document.addEventListener('mousemove', e => { if (tip.classList.contains('on')) place(e.clientX, e.clientY); });
+  document.addEventListener('click', e => { const t = e.target.closest('[data-tip]');   // на телефоне — по нажатию
+    if (!t){ tip.classList.remove('on'); return; } const r = t.getBoundingClientRect();
+    tip.innerHTML = t.dataset.tip; tip.classList.add('on'); place(r.left + r.width / 2 - 20, r.top + r.height / 2); });
+  addEventListener('scroll', () => tip.classList.remove('on'), {passive: true});
+})();
+
 function tabFeedback(){
   const rows = filtered().slice().sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
   const texts = ITEMS.filter(it => it.type === 'text');
@@ -852,6 +952,7 @@ function seedDemo(){
 
 /* ======================= ЗАПУСК ======================= */
 async function boot(){
+  $('.wrap').classList.remove('wide');
   const p = new URLSearchParams(location.search);
   $('#demo').hidden = true;
   if (DEMO && !p.has('trainer')){
